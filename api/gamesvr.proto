@@ -1,0 +1,282 @@
+syntax = "proto3";
+
+package gamesvr;
+
+option go_package = "github.com/qbgames/qbdz-game/internal/proto/gamesvr";
+
+// GameSvr is the inbound RPC service exposed by the game server.
+// It replaces the C++ IGame plugin interface (GameSvrImpl.h).
+// The upper-layer server (lobby / table manager) calls these RPCs.
+service GameSvr {
+  // ── Player lifecycle ───────────────────────────────────────────────────────
+
+  // PlayerEnter notifies the game that a player has joined the table.
+  // C++: OnPlayerEnter(COnlineGameData)
+  rpc PlayerEnter(PlayerEnterReq) returns (PlayerEnterResp);
+
+  // PlayerExit removes a player from the table.
+  // C++: OnPlayerExit(userId)
+  rpc PlayerExit(PlayerExitReq) returns (CommonResp);
+
+  // PlayerOffline marks a player as disconnected.
+  // C++: OnPlayerOffline(userId)
+  rpc PlayerOffline(PlayerOfflineReq) returns (CommonResp);
+
+  // PlayerReconnect handles a player returning after a disconnect.
+  // C++: OnGameUserReplay(userId)
+  rpc PlayerReconnect(PlayerReconnectReq) returns (CommonResp);
+
+  // PlayerReady signals that a player is ready to start.
+  // C++: OnGameUserReady(userId)
+  rpc PlayerReady(PlayerReadyReq) returns (CommonResp);
+
+  // PlayerSit seats a player at a specific chair.
+  // C++: OnGameUserSit(userId)
+  rpc PlayerSit(PlayerSitReq) returns (CommonResp);
+
+  // PlayerStand removes a player from their seat.
+  // C++: OnGameUserStand(userId)
+  rpc PlayerStand(PlayerStandReq) returns (CommonResp);
+
+  // PlayerDiscard marks a player as forfeiting the current game.
+  // C++: OnPlayerDiscard(userId)
+  rpc PlayerDiscard(PlayerDiscardReq) returns (CommonResp);
+
+  // ── Game messages ──────────────────────────────────────────────────────────
+
+  // GameMessage routes a client protocol buffer message to the game logic.
+  // C++: OnGameMsg(userId, chair, cmd, buf, len)
+  rpc GameMessage(GameMessageReq) returns (CommonResp);
+
+  // ── Table queries ──────────────────────────────────────────────────────────
+
+  // CanEnter checks whether a player is allowed to join the table.
+  // C++: CanEnter(player, status, chair)
+  rpc CanEnter(CanEnterReq) returns (CanEnterResp);
+
+  // CanSitDown checks whether a player can take a seat.
+  // C++: CanSitDown(player)
+  rpc CanSitDown(CanSitDownReq) returns (CanSitDownResp);
+
+  // CanChangeTable checks whether a player may switch tables.
+  // C++: CanChangeTable(userId)
+  rpc CanChangeTable(CanChangeTableReq) returns (CanChangeTableResp);
+
+  // GetRankedPlayers returns player IDs ordered by chip count (for SNG).
+  // C++: GetRankedPlayers(vector<uint32_t>)
+  rpc GetRankedPlayers(GetRankedPlayersReq) returns (GetRankedPlayersResp);
+
+  // GetCapacity returns the maximum number of players this table supports.
+  // C++: GetCapacity()
+  rpc GetCapacity(GetCapacityReq) returns (GetCapacityResp);
+
+  // ── Table control ──────────────────────────────────────────────────────────
+
+  // ForceEndGame asks the game to end the current hand immediately.
+  // C++: OnGameSetGameEnd()
+  rpc ForceEndGame(ForceEndGameReq) returns (CommonResp);
+
+  // ReloadConfig triggers a hot-reload of game configuration.
+  // C++: ReloadCfg()
+  rpc ReloadConfig(ReloadConfigReq) returns (CommonResp);
+
+  // SetBlindLevel updates the current SNG blind level.
+  // C++: OnGameBlindLevel(blindLevel)
+  rpc SetBlindLevel(SetBlindLevelReq) returns (CommonResp);
+
+  // SetFriendTableCfg configures a private friend table.
+  // C++: SetFriendTableCfg(roomType, anteType, exchangeIndex)
+  rpc SetFriendTableCfg(SetFriendTableCfgReq) returns (CommonResp);
+
+  // LaunchSOGame / CloseSOGame lifecycle hooks.
+  rpc LaunchGame(LaunchGameReq) returns (CommonResp);
+  rpc CloseGame(CloseGameReq) returns (CommonResp);
+
+  // ── Match / tournament ─────────────────────────────────────────────────────
+
+  // MatchWaitBuy notifies that a player entered the rebuy window.
+  // C++: OnMatchWaitBuy(userId, endTime)
+  rpc MatchWaitBuy(MatchWaitBuyReq) returns (CommonResp);
+
+  // MatchBuyFinish notifies that the rebuy/addon window has closed.
+  // C++: OnMatchBuyFinish(userId)
+  rpc MatchBuyFinish(MatchBuyFinishReq) returns (CommonResp);
+
+  // LuckyDogsBonus notifies a jackpot win.
+  // C++: LuckyDogsBonusNotify(userId, bonus, totalMoney)
+  rpc LuckyDogsBonus(LuckyDogsBonusReq) returns (CommonResp);
+}
+
+// ── Common ────────────────────────────────────────────────────────────────────
+
+message CommonResp {
+  int32  code    = 1; // 0 = success
+  string message = 2;
+}
+
+// PlayerInfo mirrors the fields from C++ COnlineGameData needed by game logic.
+message PlayerInfo {
+  uint32 user_id    = 1;
+  uint32 role_id    = 2;
+  string nick_name  = 3;
+  string avatar     = 4;
+  uint64 game_money = 5; // current coin balance
+  uint32 level      = 6;
+  uint32 chair      = 7; // requested seat (0xFF = any)
+}
+
+// ── Player lifecycle ──────────────────────────────────────────────────────────
+
+message PlayerEnterReq {
+  uint32     table_id = 1;
+  PlayerInfo player   = 2;
+}
+message PlayerEnterResp {
+  int32  code    = 1;
+  string message = 2;
+  int32  status  = 3; // 0=Sit, 1=Stand
+}
+
+message PlayerExitReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message PlayerOfflineReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message PlayerReconnectReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message PlayerReadyReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message PlayerSitReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+  uint32 chair    = 3;
+}
+
+message PlayerStandReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message PlayerDiscardReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+// ── Game messages ─────────────────────────────────────────────────────────────
+
+message GameMessageReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+  uint32 chair    = 3;
+  uint32 cmd      = 4;
+  bytes  payload  = 5; // serialized client Protobuf message
+}
+
+// ── Table queries ─────────────────────────────────────────────────────────────
+
+message CanEnterReq {
+  uint32     table_id = 1;
+  PlayerInfo player   = 2;
+  uint32     chair    = 3; // 0xFF = any
+}
+message CanEnterResp {
+  int32  code    = 1;
+  string message = 2;
+  int32  status  = 3; // 0=Sit, 1=Stand
+}
+
+message CanSitDownReq {
+  uint32     table_id = 1;
+  PlayerInfo player   = 2;
+}
+message CanSitDownResp {
+  int32  code    = 1;
+  string message = 2;
+}
+
+message CanChangeTableReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+message CanChangeTableResp {
+  int32  code    = 1;
+  string message = 2;
+}
+
+message GetRankedPlayersReq {
+  uint32 table_id = 1;
+}
+message GetRankedPlayersResp {
+  repeated uint32 user_ids = 1;
+}
+
+message GetCapacityReq {
+  uint32 table_id = 1;
+}
+message GetCapacityResp {
+  int32 capacity = 1;
+}
+
+// ── Table control ─────────────────────────────────────────────────────────────
+
+message ForceEndGameReq {
+  uint32 table_id = 1;
+}
+
+message ReloadConfigReq {
+  uint32 table_id = 1;
+  string cfg_path = 2;
+}
+
+message SetBlindLevelReq {
+  uint32 table_id    = 1;
+  uint32 blind_level = 2;
+}
+
+message SetFriendTableCfgReq {
+  uint32 table_id       = 1;
+  uint32 room_type      = 2;
+  uint32 ante_type      = 3;
+  uint32 exchange_index = 4;
+}
+
+message LaunchGameReq {
+  uint32 table_id    = 1;
+  uint32 scene_type  = 2;
+  uint32 scene_level = 3;
+}
+
+message CloseGameReq {
+  uint32 table_id = 1;
+}
+
+// ── Match / tournament ────────────────────────────────────────────────────────
+
+message MatchWaitBuyReq {
+  uint32 table_id    = 1;
+  uint32 user_id     = 2;
+  uint32 buy_end_time = 3;
+}
+
+message MatchBuyFinishReq {
+  uint32 table_id = 1;
+  uint32 user_id  = 2;
+}
+
+message LuckyDogsBonusReq {
+  uint32 table_id      = 1;
+  uint32 user_id       = 2;
+  uint32 jackpot_bonus = 3;
+  uint64 total_money   = 4;
+}

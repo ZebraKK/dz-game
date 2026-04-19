@@ -1,0 +1,156 @@
+# QBDZ 默认场景配置
+# 对应 C++ Source/SoGameLogic/SoConfig.h 中的各配置结构体
+
+scene:
+  logFlag: 1
+  errLogFlag: 1
+  sceneLevel: 10301      # ST_CLASSIC 经典场
+  gameType: 1            # GT_CLASSIC
+  sceneName: "经典场"
+  seatCount: 9
+  serviceCharge: 5       # 抽水 5%
+  waitForStart: 10       # 等待10秒开始
+  chipRatio: 1
+  actionTimeSec: 30      # 玩家行动超时30秒
+  smallBlind: 50
+  bigBlind: 100
+  minBuyIn: 2000
+  maxBuyIn: 20000
+  minCoin: 2000
+  maxCoin: 0             # 0=无上限
+  defaultBuyIn: 5000
+  canRebuy: false
+  canAddOn: false
+
+system:
+  enableRookieTraining: false
+  rookieTrainingRoundLimit: 10
+
+# SNG 盲注递增表（每级持续600秒=10分钟）
+blinds:
+  - valid: true
+    level: 1
+    smallBlind: 25
+    bigBlind: 50
+    ante: 0
+    durationSec: 600
+  - valid: true
+    level: 2
+    smallBlind: 50
+    bigBlind: 100
+    ante: 0
+    durationSec: 600
+  - valid: true
+    level: 3
+    smallBlind: 75
+    bigBlind: 150
+    ante: 0
+    durationSec: 600
+  - valid: true
+    level: 4
+    smallBlind: 100
+    bigBlind: 200
+    ante: 25
+    durationSec: 600
+  - valid: true
+    level: 5
+    smallBlind: 150
+    bigBlind: 300
+    ante: 25
+    durationSec: 600
+  - valid: true
+    level: 6
+    smallBlind: 200
+    bigBlind: 400
+    ante: 50
+    durationSec: 600
+  - valid: true
+    level: 7
+    smallBlind: 300
+    bigBlind: 600
+    ante: 75
+    durationSec: 600
+  - valid: true
+    level: 8
+    smallBlind: 400
+    bigBlind: 800
+    ante: 100
+    durationSec: 600
+  - valid: true
+    level: 9
+    smallBlind: 600
+    bigBlind: 1200
+    ante: 150
+    durationSec: 600
+  - valid: true
+    level: 10
+    smallBlind: 1000
+    bigBlind: 2000
+    ante: 200
+    durationSec: 600
+
+# SNG 配置
+sng:
+  sceneLevel: 10303
+  initChips: 10000
+  ticketPrice: 100
+  serviceCharge: 10
+  rewards:
+    - rank: 1
+      propertyID: 1030101
+      propertyCount: 500
+    - rank: 2
+      propertyID: 1030101
+      propertyCount: 200
+    - rank: 3
+      propertyID: 1030101
+      propertyCount: 0
+
+# 牛仔场景配置
+cowboy:
+  sceneLevel: 10390
+  seatCount: 8
+  roomCapacity: 1000
+  minCoin: 0
+  maxCoin: 0
+  waitTimeSec: 3
+  betTimeSec: 15
+  resultToStartSec: 10
+  seatPlayerRefresh: 3
+  tableBetLimit: 10000000
+  playerBetLimit: 5000000
+  betCoinInfos:
+    - minCoin: 0
+      betCoin: 10
+    - minCoin: 1000
+      betCoin: 50
+    - minCoin: 5000
+      betCoin: 100
+
+# 牛仔赔率配置（position → odds）
+cowboyOdds:
+  oddInfos:
+    - position: 1   # 平局
+      cdCount: 0
+      odds: 8
+    - position: 2   # 人赢
+      cdCount: 0
+      odds: 2
+    - position: 3   # 牛赢
+      cdCount: 0
+      odds: 2
+    - position: 11  # 同花
+      cdCount: 0
+      odds: 4
+    - position: 12  # 连牌
+      cdCount: 0
+      odds: 4
+    - position: 13  # 对子
+      cdCount: 0
+      odds: 4
+    - position: 14  # 同花连牌
+      cdCount: 0
+      odds: 25
+    - position: 15  # AA
+      cdCount: 0
+      odds: 25
