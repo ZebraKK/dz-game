@@ -1,0 +1,14 @@
+{
+    "v":  1,
+    "type":  "hole.cards",
+    "deliverySeq":  13,
+    "stateVersion":  21,
+    "ts":  "2026-11-03T15:01:59.500Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "cards":  [
+                                  "As",
+                                  "Kd"
+                              ]
+                }
+}

@@ -1,0 +1,8 @@
+{
+    "v":  1,
+    "type":  "pong",
+    "requestId":  "f5acf52f-a2c8-4d1c-9dac-1b54de771121",
+    "payload":  {
+                    "nonce":  "heartbeat-opaque-id"
+                }
+}

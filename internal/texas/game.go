@@ -23,30 +23,31 @@ type Game struct {
 	players [MaxSeats]*player.Player
 
 	// Per-hand state (reset in resetHand)
-	deck           cards.Deck
-	holeCards      [MaxSeats][2]cards.Card
-	community      [5]cards.Card
-	communityN     int // how many community cards revealed
+	deck       cards.Deck
+	holeCards  [MaxSeats][2]cards.Card
+	community  [5]cards.Card
+	communityN int // how many community cards revealed
 
-	dealerSeat     int // Dealer Button position
-	sbSeat         int // Small Blind seat
-	bbSeat         int // Big Blind seat
-	currentSeat    int // whose turn it is to act
+	dealerSeat  int // Dealer Button position
+	sbSeat      int // Small Blind seat
+	bbSeat      int // Big Blind seat
+	currentSeat int // whose turn it is to act
 
 	// Chips contributed this hand (across all streets, per seat)
-	chipsIn   [MaxSeats]uint64
-	allIn     [MaxSeats]bool
-	active    [MaxSeats]bool // still in hand (not folded)
+	chipsIn [MaxSeats]uint64
+	allIn   [MaxSeats]bool
+	active  [MaxSeats]bool // still in hand (not folded)
 
 	// Current street betting state
-	streetChips [MaxSeats]uint64 // chips put in this street
-	maxBet      uint64           // highest bet on current street
-	lastRaiser  int              // seat of last raiser (-1 if none)
-	actionsLeft int              // players who still need to act
+	streetChips   [MaxSeats]uint64 // chips put in this street
+	maxBet        uint64           // highest bet on current street
+	lastRaiser    int              // seat of last raiser (-1 if none)
+	actionsLeft   int              // players who still need to act
+	lastFullRaise uint64           // most recent full raise increment
 
 	blindInfo BlindInfo
 
-	handCount uint32
+	handCount    uint32
 	resultReason ResultReason
 }
 
@@ -207,10 +208,16 @@ func (g *Game) StartHand() []Event {
 
 	var events []Event
 
-	// Move dealer button
+	// Move dealer button. In heads-up play the dealer posts the small blind
+	// and acts first preflop.
 	g.dealerSeat = g.nextActiveSeat(g.dealerSeat)
-	g.sbSeat = g.nextActiveSeat(g.dealerSeat)
-	g.bbSeat = g.nextActiveSeat(g.sbSeat)
+	if g.ReadyPlayerCount() == 2 {
+		g.sbSeat = g.dealerSeat
+		g.bbSeat = g.nextActiveSeat(g.dealerSeat)
+	} else {
+		g.sbSeat = g.nextActiveSeat(g.dealerSeat)
+		g.bbSeat = g.nextActiveSeat(g.sbSeat)
+	}
 
 	// Mark all seated+ready players as in-game
 	for i, p := range g.players {
@@ -232,6 +239,7 @@ func (g *Game) StartHand() []Event {
 
 	// Post blinds
 	events = append(events, g.postBlinds()...)
+	g.lastFullRaise = g.blindInfo.BigBlind
 
 	// Deal 2 hole cards to each active player
 	events = append(events, g.dealHoleCards()...)
@@ -450,10 +458,16 @@ func (g *Game) doBet(seat int, amount uint64) []Event {
 	p.ChipDesk -= actual
 	p.Action = player.ActionBet
 	if g.streetChips[seat] > g.maxBet {
+		oldMaxBet := g.maxBet
 		g.maxBet = g.streetChips[seat]
 		g.lastRaiser = seat
-		// Everyone else needs to act again
-		g.actionsLeft = g.countActive() - 1
+		raiseIncrement := g.maxBet - oldMaxBet
+		if raiseIncrement >= g.blindInfo.BigBlind {
+			g.lastFullRaise = raiseIncrement
+			g.actionsLeft = g.countActive() - 1
+		} else {
+			g.actionsLeft--
+		}
 	} else {
 		g.actionsLeft--
 	}
@@ -471,9 +485,16 @@ func (g *Game) doRaise(seat int, totalAmount uint64) []Event {
 	p.ChipDesk -= owed
 	p.Action = player.ActionRaise
 	if g.streetChips[seat] > g.maxBet {
+		oldMaxBet := g.maxBet
 		g.maxBet = g.streetChips[seat]
 		g.lastRaiser = seat
-		g.actionsLeft = g.countActive() - 1
+		raiseIncrement := g.maxBet - oldMaxBet
+		if raiseIncrement >= g.lastFullRaise {
+			g.lastFullRaise = raiseIncrement
+			g.actionsLeft = g.countActive() - 1
+		} else {
+			g.actionsLeft--
+		}
 	} else {
 		g.actionsLeft--
 	}
@@ -489,9 +510,16 @@ func (g *Game) doAllIn(seat int) []Event {
 	p.Action = player.ActionAllIn
 	g.allIn[seat] = true
 	if g.streetChips[seat] > g.maxBet {
+		oldMaxBet := g.maxBet
 		g.maxBet = g.streetChips[seat]
 		g.lastRaiser = seat
-		g.actionsLeft = g.countActive() - 1
+		raiseIncrement := g.maxBet - oldMaxBet
+		if raiseIncrement >= g.lastFullRaise {
+			g.lastFullRaise = raiseIncrement
+			g.actionsLeft = g.countActive() - 1
+		} else {
+			g.actionsLeft--
+		}
 	} else {
 		g.actionsLeft--
 	}
@@ -711,6 +739,7 @@ func (g *Game) resetHand() {
 	g.maxBet = 0
 	g.lastRaiser = -1
 	g.actionsLeft = 0
+	g.lastFullRaise = 0
 	g.resultReason = ReasonNull
 	for i := range g.chipsIn {
 		g.chipsIn[i] = 0
@@ -727,6 +756,7 @@ func (g *Game) resetHand() {
 func (g *Game) resetStreet() {
 	g.maxBet = 0
 	g.lastRaiser = -1
+	g.lastFullRaise = 0
 	for i := range g.streetChips {
 		g.streetChips[i] = 0
 	}

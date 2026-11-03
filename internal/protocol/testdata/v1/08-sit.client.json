@@ -1,0 +1,8 @@
+{
+    "v":  1,
+    "type":  "sit",
+    "requestId":  "43829fed-e9e0-46ff-8a9a-6cf0cf8db7c8",
+    "payload":  {
+                    "preferredSeat":  4
+                }
+}

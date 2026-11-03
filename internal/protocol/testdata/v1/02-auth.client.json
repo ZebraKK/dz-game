@@ -1,0 +1,11 @@
+{
+    "v":  1,
+    "type":  "auth",
+    "requestId":  "2f942143-4a12-4cc8-b4cf-19d701255593",
+    "payload":  {
+                    "method":  "ed25519",
+                    "playerId":  "alice",
+                    "keyId":  "ed25519:7A4C91D2",
+                    "signature":  "base64url-signature"
+                }
+}

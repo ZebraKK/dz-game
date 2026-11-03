@@ -1,0 +1,13 @@
+{
+    "v":  1,
+    "type":  "join.ok",
+    "deliverySeq":  3,
+    "stateVersion":  21,
+    "ts":  "2026-11-03T15:00:01.100Z",
+    "payload":  {
+                    "tableId":  "main",
+                    "role":  "spectator",
+                    "seat":  null,
+                    "pendingSit":  false
+                }
+}

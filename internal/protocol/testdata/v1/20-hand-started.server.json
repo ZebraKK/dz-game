@@ -1,0 +1,23 @@
+{
+    "v":  1,
+    "type":  "hand.started",
+    "deliverySeq":  12,
+    "stateVersion":  20,
+    "ts":  "2026-11-03T15:01:59.000Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "buttonSeat":  1,
+                    "smallBlindSeat":  2,
+                    "bigBlindSeat":  3,
+                    "participatingSeats":  [
+                                               1,
+                                               2,
+                                               3
+                                           ],
+                    "startingStacks":  {
+                                           "1":  2000,
+                                           "2":  2000,
+                                           "3":  2000
+                                       }
+                }
+}

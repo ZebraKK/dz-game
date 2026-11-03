@@ -1,0 +1,11 @@
+{
+    "v":  1,
+    "type":  "auth.challenge",
+    "deliverySeq":  1,
+    "ts":  "2026-11-03T15:00:00.000Z",
+    "payload":  {
+                    "serverId":  "poker-local-1",
+                    "challenge":  "base64url-32-random-bytes",
+                    "expiresAt":  "2026-11-03T15:00:30.000Z"
+                }
+}

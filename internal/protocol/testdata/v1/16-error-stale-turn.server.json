@@ -1,0 +1,18 @@
+{
+    "v":  1,
+    "type":  "error",
+    "deliverySeq":  19,
+    "stateVersion":  22,
+    "ts":  "2026-11-03T15:02:30.000Z",
+    "payload":  {
+                    "code":  "STALE_TURN",
+                    "message":  "动作已过期",
+                    "retryable":  false,
+                    "requestId":  "8d6f0a39-18e2-44b2-b37c-d48e1fbf3c25",
+                    "refActionId":  "e721b5c8-56a4-4c23-884e-d0fd0b2c78aa",
+                    "refStateVersion":  22,
+                    "details":  {
+                                    "reason":  "TURN_CHANGED"
+                                }
+                }
+}

@@ -1,0 +1,8 @@
+{
+    "v":  1,
+    "type":  "join",
+    "requestId":  "e9c3e112-2ab1-4a1e-a7e1-0d94c40650f0",
+    "payload":  {
+                    "tableId":  "main"
+                }
+}

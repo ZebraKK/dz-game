@@ -1,0 +1,21 @@
+{
+    "v":  1,
+    "type":  "action.result",
+    "deliverySeq":  15,
+    "stateVersion":  22,
+    "ts":  "2026-11-03T15:02:12.000Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "actionId":  "e721b5c8-56a4-4c23-884e-d0fd0b2c78aa",
+                    "playerId":  "alice",
+                    "seat":  1,
+                    "action":  {
+                                   "type":  "raise",
+                                   "amount":  60
+                               },
+                    "auto":  false,
+                    "pot":  90,
+                    "stackAfter":  1940,
+                    "streetBetAfter":  60
+                }
+}

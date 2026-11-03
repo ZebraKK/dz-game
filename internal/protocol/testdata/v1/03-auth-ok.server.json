@@ -1,0 +1,11 @@
+{
+    "v":  1,
+    "type":  "auth.ok",
+    "deliverySeq":  2,
+    "ts":  "2026-11-03T15:00:01.000Z",
+    "payload":  {
+                    "playerId":  "alice",
+                    "displayName":  "Alice",
+                    "sessionId":  "session-opaque-id"
+                }
+}

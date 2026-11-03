@@ -1,0 +1,12 @@
+{
+    "v":  1,
+    "type":  "sit.pending",
+    "deliverySeq":  5,
+    "stateVersion":  22,
+    "ts":  "2026-11-03T15:02:05.000Z",
+    "payload":  {
+                    "preferredSeat":  4,
+                    "effective":  "next_hand",
+                    "message":  "已受理，将在下一手开始时入座"
+                }
+}

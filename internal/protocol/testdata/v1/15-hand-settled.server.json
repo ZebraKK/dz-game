@@ -1,0 +1,49 @@
+{
+    "v":  1,
+    "type":  "hand.settled",
+    "deliverySeq":  18,
+    "stateVersion":  25,
+    "ts":  "2026-11-03T15:03:31.000Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "board":  [
+                                  "Ah",
+                                  "7d",
+                                  "3c",
+                                  "Qs",
+                                  "2h"
+                              ],
+                    "pots":  [
+                                 {
+                                     "index":  1,
+                                     "amount":  240,
+                                     "eligibleSeats":  [
+                                                           1,
+                                                           2,
+                                                           3
+                                                       ],
+                                     "winnerSeats":  [
+                                                         2
+                                                     ]
+                                 }
+                             ],
+                    "winners":  [
+                                    {
+                                        "seat":  2,
+                                        "playerId":  "bob",
+                                        "amount":  240,
+                                        "handRank":  "Three of a Kind"
+                                    }
+                                ],
+                    "finalStacks":  {
+                                        "1":  1920,
+                                        "2":  2160,
+                                        "3":  1920
+                                    },
+                    "deltas":  {
+                                   "1":  -80,
+                                   "2":  160,
+                                   "3":  -80
+                               }
+                }
+}

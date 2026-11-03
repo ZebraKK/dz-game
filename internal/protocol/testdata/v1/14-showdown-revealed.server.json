@@ -1,0 +1,46 @@
+{
+    "v":  1,
+    "type":  "showdown.revealed",
+    "deliverySeq":  17,
+    "stateVersion":  24,
+    "ts":  "2026-11-03T15:03:30.000Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "board":  [
+                                  "Ah",
+                                  "7d",
+                                  "3c",
+                                  "Qs",
+                                  "2h"
+                              ],
+                    "reveals":  [
+                                    {
+                                        "seat":  1,
+                                        "playerId":  "alice",
+                                        "cards":  [
+                                                      "As",
+                                                      "Kd"
+                                                  ],
+                                        "handRank":  "One Pair"
+                                    },
+                                    {
+                                        "seat":  2,
+                                        "playerId":  "bob",
+                                        "cards":  [
+                                                      "Qd",
+                                                      "Qc"
+                                                  ],
+                                        "handRank":  "Three of a Kind"
+                                    },
+                                    {
+                                        "seat":  3,
+                                        "playerId":  "carol",
+                                        "cards":  [
+                                                      "Jh",
+                                                      "Th"
+                                                  ],
+                                        "handRank":  "High Card"
+                                    }
+                                ]
+                }
+}

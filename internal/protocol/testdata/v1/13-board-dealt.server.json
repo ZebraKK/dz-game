@@ -1,0 +1,22 @@
+{
+    "v":  1,
+    "type":  "board.dealt",
+    "deliverySeq":  16,
+    "stateVersion":  23,
+    "ts":  "2026-11-03T15:03:00.000Z",
+    "payload":  {
+                    "handId":  "hand-20261103-0001",
+                    "street":  "flop",
+                    "cards":  [
+                                  "Ah",
+                                  "7d",
+                                  "3c"
+                              ],
+                    "board":  [
+                                  "Ah",
+                                  "7d",
+                                  "3c"
+                              ],
+                    "pot":  240
+                }
+}

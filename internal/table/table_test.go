@@ -54,8 +54,8 @@ func TestHeadsUpFold(t *testing.T) {
 }
 
 // TestHeadsUpExplicitFold: first actor folds, hand ends immediately.
-// With 2 players: dealer=seat0(2001), SB=seat1(2002), BB=seat0(2001).
-// PreFlop first actor = seat after BB = seat1 (2002).
+// With 2 players: dealer=seat0(2001), SB=seat0(2001), BB=seat1(2002).
+// PreFlop first actor is the dealer/small blind at seat0 (2001).
 func TestHeadsUpExplicitFold(t *testing.T) {
 	st := stub.NewTableStub()
 	cfg := testConfig()
@@ -69,10 +69,10 @@ func TestHeadsUpExplicitFold(t *testing.T) {
 	// Wait for hand start (CmdNotifyAction = it's someone's turn)
 	st.WaitForCmd(t, table.CmdNotifyAction, 8*time.Second)
 
-	// In preflop with 2 players, seat1 (2002) acts first (UTG / SB position)
+	// In preflop heads-up, the dealer/small blind at seat0 (2001) acts first.
 	tbl.Send(table.Msg{
 		Kind:   table.MsgKindGameMessage,
-		UserID: 2002,
+		UserID: 2001,
 		Cmd:    table.CmdReqFold,
 	})
 

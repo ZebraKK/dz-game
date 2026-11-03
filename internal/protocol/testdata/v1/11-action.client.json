@@ -1,0 +1,14 @@
+{
+    "v":  1,
+    "type":  "action",
+    "requestId":  "8d6f0a39-18e2-44b2-b37c-d48e1fbf3c25",
+    "payload":  {
+                    "actionId":  "e721b5c8-56a4-4c23-884e-d0fd0b2c78aa",
+                    "handId":  "hand-20261103-0001",
+                    "turnId":  "turn-hand-20261103-0001-preflop-alice-001",
+                    "action":  {
+                                   "type":  "raise",
+                                   "amount":  60
+                               }
+                }
+}
