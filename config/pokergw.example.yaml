@@ -1,0 +1,16 @@
+# poker gateway runtime configuration
+# Explicit command-line flags override the corresponding YAML values.
+addr: "127.0.0.1:8080"
+serverId: "poker-local-1"
+identityFile: "./data/identities.json"
+historyFile: "./data/history.jsonl"
+allowedOrigins: []
+
+table:
+  smallBlind: 10
+  bigBlind: 20
+  startingStack: 2000
+  actionTimeoutMs: 90000
+  disconnectGraceMs: 90000
+  startCountdownMs: 3000
+  resultDisplayMs: 5000
