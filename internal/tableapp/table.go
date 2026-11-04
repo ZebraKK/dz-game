@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qbgames/qbdz-game/internal/cards"
+	"github.com/qbgames/qbdz-game/internal/metrics"
 	"github.com/qbgames/qbdz-game/internal/player"
 	"github.com/qbgames/qbdz-game/internal/protocol"
 	"github.com/qbgames/qbdz-game/internal/texas"
@@ -18,13 +19,14 @@ type ClientSink interface {
 }
 
 type participant struct {
-	playerID    string
-	displayName string
-	userID      uint32
-	sink        ClientSink
-	seat        int
-	pendingSeat int
-	connected   bool
+	playerID       string
+	displayName    string
+	userID         uint32
+	sink           ClientSink
+	seat           int
+	pendingSeat    int
+	connected      bool
+	disconnectedAt time.Time
 }
 
 type seatState struct {
@@ -258,6 +260,7 @@ func (t *Table) handleJoin(cmd command) (protocol.JoinOKPayload, *Error) {
 	}
 	p.sink = cmd.sink
 	p.connected = true
+	p.disconnectedAt = time.Time{}
 	t.stateVersion++
 
 	role := "spectator"
@@ -288,6 +291,13 @@ func (t *Table) handleDisconnect(playerID string, sink ClientSink) {
 	}
 	p.connected = false
 	p.sink = nil
+	p.disconnectedAt = time.Now()
+	if t.isCurrentTurn(p.seat) {
+		deadline := p.disconnectedAt.Add(t.cfg.DisconnectGrace)
+		if t.actionUntil.IsZero() || deadline.Before(t.actionUntil) {
+			t.actionUntil = deadline
+		}
+	}
 	t.stateVersion++
 	t.broadcastSnapshot()
 }
@@ -436,6 +446,7 @@ func (t *Table) chooseSeat(preferred *int) (int, *Error) {
 }
 
 func (t *Table) onTick(now time.Time) {
+	t.expireDisconnectedSeats(now)
 	switch {
 	case t.phase == "countdown" && !now.Before(t.countdownAt):
 		t.startHand(now)
@@ -443,6 +454,27 @@ func (t *Table) onTick(now time.Time) {
 		t.handleAutoAction(now)
 	case t.phase == "settled" && !now.Before(t.resultUntil):
 		t.finishResultDisplay(now)
+	}
+}
+
+func (t *Table) expireDisconnectedSeats(now time.Time) {
+	for _, s := range t.seats {
+		if s == nil || s.participant == nil || s.player == nil || s.sittingOut {
+			continue
+		}
+		p := s.participant
+		if p.connected || p.disconnectedAt.IsZero() || now.Before(p.disconnectedAt.Add(t.cfg.DisconnectGrace)) {
+			continue
+		}
+		s.sittingOut = true
+		s.player.IsReady = false
+		t.stateVersion++
+		t.broadcast(protocol.TypePlayerSitOut, protocol.PlayerSitOutPayload{
+			Seat:     p.seat + 1,
+			PlayerID: p.playerID,
+			SitOut:   true,
+		})
+		t.broadcastSnapshot()
 	}
 }
 
@@ -476,6 +508,7 @@ func (t *Table) startHand(now time.Time) {
 		return
 	}
 	t.handNumber++
+	metrics.PokerHandsTotal.Add(1)
 	t.handID = fmt.Sprintf("hand-%06d", t.handNumber)
 	t.actionSeq = 0
 	t.turnID = ""
@@ -557,10 +590,17 @@ func (t *Table) sendActionRequestToCurrent(now time.Time) {
 	t.turnSeat = seat
 	t.actionSeq++
 	t.turnID = fmt.Sprintf("turn-%s-%d", t.handID, t.actionSeq)
-	t.actionUntil = now.Add(t.cfg.ActionTimeout)
+	deadline := now.Add(t.cfg.ActionTimeout)
 	if s := t.seats[seat]; s != nil {
+		if p := s.participant; p != nil && !p.connected && !p.disconnectedAt.IsZero() {
+			graceDeadline := p.disconnectedAt.Add(t.cfg.DisconnectGrace)
+			if graceDeadline.Before(deadline) {
+				deadline = graceDeadline
+			}
+		}
 		t.sendActionRequest(s.participant)
 	}
+	t.actionUntil = deadline
 }
 
 func (t *Table) sendActionRequest(p *participant) {
@@ -657,6 +697,7 @@ func (t *Table) applyAction(seat int, action protocol.ActionPayload, auto bool, 
 		s.lastAction = last
 	}
 	t.stateVersion++
+	metrics.PokerActionsTotal.Add(1)
 	result := protocol.ActionResultPayload{
 		HandID:         t.handID,
 		ActionID:       action.ActionID,

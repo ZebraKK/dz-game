@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"expvar"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -145,6 +146,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/ws", gatewayServer)
+	mux.Handle("GET /debug/vars", expvar.Handler())
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

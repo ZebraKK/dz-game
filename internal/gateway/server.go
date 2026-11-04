@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/qbgames/qbdz-game/internal/metrics"
 	"github.com/qbgames/qbdz-game/internal/protocol"
 	"github.com/qbgames/qbdz-game/internal/tableapp"
 )
@@ -72,6 +73,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.logger.Warn("websocket accept failed", "err", err)
 		return
 	}
+	metrics.PokerConnectionsTotal.Add(1)
+	metrics.PokerActiveConnections.Add(1)
+	s.logger.Info("websocket connected", "remoteAddr", r.RemoteAddr)
 	conn.SetReadLimit(maxMessageSize)
 	ctx, cancel := context.WithCancel(context.Background())
 	sess := &session{
@@ -85,9 +89,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sess.touch()
 	go sess.writeLoop()
 	defer func() {
+		metrics.PokerActiveConnections.Add(-1)
 		if sess.playerID != "" {
 			s.table.Disconnect(sess.playerID, sess)
 			s.removeSession(sess.playerID, sess)
+			s.logger.Info("websocket disconnected", "playerID", sess.playerID)
 		}
 		sess.close(websocket.StatusNormalClosure, "connection closed")
 	}()
@@ -109,6 +115,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	identity, authErr := s.authenticate(ctx, sess, challenge, expiresAt)
 	if authErr != nil {
+		metrics.PokerAuthFailuresTotal.Add(1)
+		s.logger.Warn("authentication failed", "remoteAddr", r.RemoteAddr, "err", authErr)
 		sess.sendError(actorProtocolError(protocol.ErrAuthFailed, authErr.Error()), "")
 		time.Sleep(30 * time.Millisecond)
 		sess.close(4001, "authentication failed")
@@ -116,6 +124,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	sess.playerID = identity.PlayerID
 	sess.displayName = identity.DisplayName
+	s.logger.Info("authentication succeeded", "playerID", identity.PlayerID)
 	if !sess.Send(protocol.TypeAuthOK, 0, protocol.AuthOKPayload{
 		PlayerID:    identity.PlayerID,
 		DisplayName: identity.DisplayName,
@@ -162,9 +171,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sess.touch()
+		metrics.PokerMessagesTotal.Add(1)
 		if !sess.allowMessage() {
+			metrics.PokerRateLimitedTotal.Add(1)
 			sess.sendError(actorProtocolError(protocol.ErrRateLimited, "请求过快"), env.RequestID)
 			if sess.rateViolations() >= 10 {
+				metrics.PokerRateLimitClosesTotal.Add(1)
+				s.logger.Warn("websocket closed for repeated rate limiting", "playerID", sess.playerID)
 				sess.close(4008, "rate limited")
 				return
 			}

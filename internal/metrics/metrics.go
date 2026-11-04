@@ -25,4 +25,28 @@ var (
 
 	// HTTPRequests counts total HTTP requests handled.
 	HTTPRequests = expvar.NewInt("gamesvr_http_requests_total")
+
+	// PokerConnectionsTotal counts accepted player gateway WebSocket connections.
+	PokerConnectionsTotal = expvar.NewInt("poker_connections_total")
+
+	// PokerActiveConnections is the current number of accepted WebSocket connections.
+	PokerActiveConnections = expvar.NewInt("poker_active_connections")
+
+	// PokerAuthFailuresTotal counts rejected authentication attempts.
+	PokerAuthFailuresTotal = expvar.NewInt("poker_auth_failures_total")
+
+	// PokerMessagesTotal counts authenticated client messages read from sockets.
+	PokerMessagesTotal = expvar.NewInt("poker_messages_total")
+
+	// PokerRateLimitedTotal counts messages rejected by the per-connection limiter.
+	PokerRateLimitedTotal = expvar.NewInt("poker_rate_limited_total")
+
+	// PokerRateLimitClosesTotal counts connections closed for repeated rate limiting.
+	PokerRateLimitClosesTotal = expvar.NewInt("poker_rate_limit_closes_total")
+
+	// PokerHandsTotal counts started poker hands.
+	PokerHandsTotal = expvar.NewInt("poker_hands_total")
+
+	// PokerActionsTotal counts successfully applied poker actions, including automatic actions.
+	PokerActionsTotal = expvar.NewInt("poker_actions_total")
 )
