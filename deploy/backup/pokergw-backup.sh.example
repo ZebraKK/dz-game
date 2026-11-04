@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DATA_DIR="${POKER_DATA_DIR:-/opt/poker/data}"
+BACKUP_DIR="${POKER_BACKUP_DIR:-/var/backups/poker}"
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+ARCHIVE="$BACKUP_DIR/pokergw-$STAMP.tar.gz"
+
+umask 077
+mkdir -p "$BACKUP_DIR"
+
+required=("$DATA_DIR/identities.json" "$DATA_DIR/history.jsonl")
+for file in "${required[@]}"; do
+    if [[ ! -f "$file" ]]; then
+        echo "missing backup input: $file" >&2
+        exit 1
+    fi
+done
+
+tar -czf "$ARCHIVE" -C "$DATA_DIR" identities.json history.jsonl
+sha256sum "$ARCHIVE" >"$ARCHIVE.sha256"
+echo "$ARCHIVE"

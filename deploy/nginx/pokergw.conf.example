@@ -1,0 +1,35 @@
+# Replace poker.example.com and certificate paths before use.
+# The gateway should bind to 127.0.0.1:8080 when nginx terminates TLS.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name poker.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/poker.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/poker.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    location = /debug/vars {
+        return 404;
+    }
+
+    location = /healthz {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+    }
+
+    location = /ws {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}

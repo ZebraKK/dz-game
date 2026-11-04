@@ -1,0 +1,25 @@
+[Unit]
+Description=Poker WebSocket Gateway
+Documentation=file:/opt/poker/README-deploy.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=poker
+Group=poker
+WorkingDirectory=/opt/poker
+ExecStart=/opt/poker/bin/pokergw -config /opt/poker/config/pokergw.yaml
+Restart=on-failure
+RestartSec=3s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/poker/data
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

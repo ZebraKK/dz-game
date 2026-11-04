@@ -1,0 +1,12 @@
+# Optional: only needed when pokergw stderr is redirected to a file.
+# With systemd + journald, prefer journald retention instead of this file.
+/var/log/poker/pokergw.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    create 0600 poker poker
+}

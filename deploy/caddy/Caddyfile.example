@@ -1,0 +1,8 @@
+# Replace poker.example.com and the upstream port before use.
+# The gateway should bind to 127.0.0.1:8080 when Caddy terminates TLS.
+poker.example.com {
+	@metrics path /debug/vars
+	respond @metrics 404
+
+	reverse_proxy 127.0.0.1:8080
+}
