@@ -446,7 +446,7 @@ func (t *Table) chooseSeat(preferred *int) (int, *Error) {
 }
 
 func (t *Table) onTick(now time.Time) {
-	t.expireDisconnectedSeats(now)
+	t.expireDisconnectedPlayers(now)
 	switch {
 	case t.phase == "countdown" && !now.Before(t.countdownAt):
 		t.startHand(now)
@@ -457,7 +457,21 @@ func (t *Table) onTick(now time.Time) {
 	}
 }
 
-func (t *Table) expireDisconnectedSeats(now time.Time) {
+func (t *Table) expireDisconnectedPlayers(now time.Time) {
+	pendingChanged := false
+	for _, p := range t.participants {
+		if p.connected || p.disconnectedAt.IsZero() || now.Before(p.disconnectedAt.Add(t.cfg.DisconnectGrace)) {
+			continue
+		}
+		if p.pendingSeat >= 0 {
+			p.pendingSeat = -1
+			t.stateVersion++
+			pendingChanged = true
+		}
+	}
+	if pendingChanged {
+		t.broadcastSnapshot()
+	}
 	for _, s := range t.seats {
 		if s == nil || s.participant == nil || s.player == nil || s.sittingOut {
 			continue
