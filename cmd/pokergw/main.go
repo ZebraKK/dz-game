@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/tls"
 	"expvar"
 	"flag"
 	"fmt"
@@ -37,6 +38,8 @@ func main() {
 	serverID := flag.String("server-id", defaults.ServerID, "authentication server ID")
 	identityFile := flag.String("identity-file", "", "JSON identity registry file")
 	historyFile := flag.String("history-file", "", "append-only JSONL hand history file")
+	tlsCertFile := flag.String("tls-cert", "", "TLS certificate PEM file")
+	tlsKeyFile := flag.String("tls-key", "", "TLS private key PEM file")
 	smallBlind := flag.Uint64("small-blind", defaults.Table.SmallBlind, "small blind")
 	bigBlind := flag.Uint64("big-blind", defaults.Table.BigBlind, "big blind")
 	startingStack := flag.Uint64("starting-stack", defaults.Table.StartingStack, "starting stack")
@@ -71,6 +74,12 @@ func main() {
 	}
 	if explicit["history-file"] {
 		runtime.HistoryFile = *historyFile
+	}
+	if explicit["tls-cert"] {
+		runtime.TLSCertFile = *tlsCertFile
+	}
+	if explicit["tls-key"] {
+		runtime.TLSKeyFile = *tlsKeyFile
 	}
 	if explicit["small-blind"] {
 		runtime.Table.SmallBlind = *smallBlind
@@ -155,18 +164,27 @@ func main() {
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
+		TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12},
 	}
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
+		tlsEnabled := runtime.TLSEnabled()
 		slog.Info("poker gateway listening",
 			"addr", runtime.Addr,
+			"tls", tlsEnabled,
 			"identities", len(identities),
 			"serverID", runtime.ServerID,
 			"allowedOrigins", len(runtime.AllowedOrigins),
 		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if tlsEnabled {
+			err = srv.ListenAndServeTLS(runtime.TLSCertFile, runtime.TLSKeyFile)
+		} else {
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("gateway server failed", "err", err)
 			os.Exit(1)
 		}

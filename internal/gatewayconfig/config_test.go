@@ -71,3 +71,28 @@ func TestNewTableConfig(t *testing.T) {
 		t.Fatalf("unexpected action timeout: %s", got.ActionTimeout)
 	}
 }
+
+func TestLoadTLSConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "gateway.yaml")
+	content := `tlsCertFile: /etc/poker/fullchain.pem
+tlsKeyFile: /etc/poker/privkey.pem
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.TLSEnabled() || cfg.TLSCertFile != "/etc/poker/fullchain.pem" || cfg.TLSKeyFile != "/etc/poker/privkey.pem" {
+		t.Fatalf("unexpected TLS config: %+v", cfg)
+	}
+}
+
+func TestValidateRejectsPartialTLSConfig(t *testing.T) {
+	cfg := Default()
+	cfg.TLSCertFile = "/etc/poker/fullchain.pem"
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected partial TLS config to be rejected")
+	}
+}

@@ -16,6 +16,8 @@ type Config struct {
 	ServerID       string      `yaml:"serverId"`
 	IdentityFile   string      `yaml:"identityFile"`
 	HistoryFile    string      `yaml:"historyFile"`
+	TLSCertFile    string      `yaml:"tlsCertFile"`
+	TLSKeyFile     string      `yaml:"tlsKeyFile"`
 	AllowedOrigins []string    `yaml:"allowedOrigins"`
 	Table          TableConfig `yaml:"table"`
 }
@@ -70,6 +72,9 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.ServerID) == "" {
 		return fmt.Errorf("serverId must not be empty")
 	}
+	if (strings.TrimSpace(c.TLSCertFile) == "") != (strings.TrimSpace(c.TLSKeyFile) == "") {
+		return fmt.Errorf("tlsCertFile and tlsKeyFile must be set together")
+	}
 	for i, origin := range c.AllowedOrigins {
 		if strings.TrimSpace(origin) == "" {
 			return fmt.Errorf("allowedOrigins[%d] must not be empty", i)
@@ -109,4 +114,8 @@ func (c Config) NewTableConfig() tableapp.Config {
 	cfg.StartCountdown = time.Duration(c.Table.StartCountdownMs) * time.Millisecond
 	cfg.ResultDisplay = time.Duration(c.Table.ResultDisplayMs) * time.Millisecond
 	return cfg
+}
+
+func (c Config) TLSEnabled() bool {
+	return strings.TrimSpace(c.TLSCertFile) != "" && strings.TrimSpace(c.TLSKeyFile) != ""
 }

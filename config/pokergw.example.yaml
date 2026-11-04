@@ -4,6 +4,9 @@ addr: "127.0.0.1:8080"
 serverId: "poker-local-1"
 identityFile: "./data/identities.json"
 historyFile: "./data/history.jsonl"
+# Set both files to enable built-in TLS/WSS. Leave both empty behind a TLS reverse proxy.
+tlsCertFile: ""
+tlsKeyFile: ""
 allowedOrigins: []
 
 table:
