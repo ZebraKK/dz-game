@@ -10,13 +10,13 @@ package texas
 type GameStatus int
 
 const (
-	StatusNoStart      GameStatus = 0 // eumSoGsNoStart      等待开始
-	StatusCountdown    GameStatus = 1 // eumSoGsCountDownStart 倒计时
-	StatusPreFlop      GameStatus = 2 // eumSoGsPreFlop      翻牌前
-	StatusFlop         GameStatus = 3 // eumSoGsFlop         翻牌
-	StatusTurn         GameStatus = 4 // eumSoGsTurn         转牌
-	StatusRiver        GameStatus = 5 // eumSoGsRiver        河牌
-	StatusResult       GameStatus = 6 // eumSoGsResult       结算
+	StatusNoStart   GameStatus = 0 // eumSoGsNoStart      等待开始
+	StatusCountdown GameStatus = 1 // eumSoGsCountDownStart 倒计时
+	StatusPreFlop   GameStatus = 2 // eumSoGsPreFlop      翻牌前
+	StatusFlop      GameStatus = 3 // eumSoGsFlop         翻牌
+	StatusTurn      GameStatus = 4 // eumSoGsTurn         转牌
+	StatusRiver     GameStatus = 5 // eumSoGsRiver        河牌
+	StatusResult    GameStatus = 6 // eumSoGsResult       结算
 )
 
 func (s GameStatus) String() string {
@@ -34,8 +34,8 @@ func (s GameStatus) String() string {
 type TableStatus int
 
 const (
-	TableWaiting  TableStatus = 0 // enumSoTsWaiting 等待中
-	TableGaming   TableStatus = 1 // enumSoTsGaming  游戏中
+	TableWaiting   TableStatus = 0 // enumSoTsWaiting 等待中
+	TableGaming    TableStatus = 1 // enumSoTsGaming  游戏中
 	TableDismissed TableStatus = 2 // enumSoTsDismiss 已解散
 )
 
@@ -83,17 +83,18 @@ const (
 // The table actor processes each event after calling a Game method.
 type Event struct {
 	Kind          EventKind
-	TargetUserID  uint32        // for SendTo / KickPlayer
-	ExcludeUserID uint32        // for SendExcept
-	Cmd           uint32        // Protobuf command ID
-	Payload       []byte        // serialized Protobuf message
-	TimerID       TimerID       // for SetTimer / CancelTimer
-	TimerDuration int64         // milliseconds, for SetTimer
-	WinChips      int64         // for SettleBill: net win (after fee deducted)
-	BetChips      uint64        // for SettleBill: total chips wagered this hand
-	ServiceFee    uint64        // for SettleBill: rake charged to winner
-	BillUserID    uint32        // for SettleBill
-	HandCount     uint32        // for SettleBill: hand number this session
-	BillReason    ResultReason  // for SettleBill: why the hand ended
-	KickReasonID  uint32        // for KickPlayer
+	TargetUserID  uint32       // for SendTo / KickPlayer
+	ExcludeUserID uint32       // for SendExcept
+	Cmd           uint32       // Protobuf command ID
+	Payload       []byte       // serialized Protobuf message
+	TimerID       TimerID      // for SetTimer / CancelTimer
+	TimerDuration int64        // milliseconds, for SetTimer
+	WinChips      int64        // for SettleBill: net win (after fee deducted)
+	BetChips      uint64       // for SettleBill: total chips wagered this hand
+	ServiceFee    uint64       // for SettleBill: rake charged to winner
+	BillUserID    uint32       // for SettleBill
+	HandCount     uint32       // for SettleBill: hand number this session
+	BillReason    ResultReason // for SettleBill: why the hand ended
+	PoolIndex     int          // for SettleBill: zero-based pot index
+	KickReasonID  uint32       // for KickPlayer
 }

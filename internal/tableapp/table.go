@@ -96,6 +96,9 @@ type Table struct {
 	revealedCards    [MaxSeats][]string
 	actionCache      map[string]cachedAction
 	autoSeq          uint64
+	recorder         HandRecorder
+	handStartedAt    time.Time
+	actionLog        []HandActionRecord
 }
 
 func NewTable(cfg Config) *Table {
@@ -479,6 +482,8 @@ func (t *Table) startHand(now time.Time) {
 	t.turnSeat = -1
 	t.actionUntil = time.Time{}
 	t.actionCache = make(map[string]cachedAction)
+	t.handStartedAt = now
+	t.actionLog = nil
 	t.lastActions = [MaxSeats]*protocol.LastActionView{}
 	t.revealedCards = [MaxSeats][]string{}
 	t.startingStacks = make(map[int]uint64)
@@ -667,6 +672,16 @@ func (t *Table) applyAction(seat int, action protocol.ActionPayload, auto bool, 
 		t.actionCache[action.ActionID] = cachedAction{payload: action, result: result}
 	}
 	t.broadcast(protocol.TypeActionResult, result)
+	if s := t.seats[seat]; s != nil && s.participant != nil {
+		t.actionLog = append(t.actionLog, HandActionRecord{
+			Seat:     seat + 1,
+			PlayerID: s.participant.playerID,
+			Action:   action.Action.Type,
+			Amount:   action.Action.Amount,
+			Auto:     auto,
+			At:       now,
+		})
+	}
 
 	newBoard := len(t.game.Community())
 	if newBoard > oldBoard {
@@ -754,21 +769,7 @@ func (t *Table) finishHand(events []texas.Event, now time.Time) {
 	sort.Ints(winnerSeats)
 	sort.Slice(winnerResults, func(i, j int) bool { return winnerResults[i].Seat < winnerResults[j].Seat })
 
-	gamePots := t.game.Pots()
-	pots := make([]protocol.PotResult, 0, len(gamePots))
-	for i, pool := range gamePots {
-		eligible := eligibleSeats(pool)
-		potWinners := []int{}
-		if len(gamePots) == 1 {
-			potWinners = oneBased(winnerSeats)
-		}
-		pots = append(pots, protocol.PotResult{
-			Index:         i + 1,
-			Amount:        pool.Amount,
-			EligibleSeats: eligible,
-			WinnerSeats:   potWinners,
-		})
-	}
+	pots := t.buildPotResults(events, t.game.Pots())
 
 	finalStacks := make(map[string]uint64)
 	deltas := make(map[string]int64)
@@ -779,6 +780,7 @@ func (t *Table) finishHand(events []texas.Event, now time.Time) {
 		deltas[key] = int64(state.Chips) - int64(t.startingStacks[seat])
 	}
 
+	t.recordHand(board, pots, winnerResults)
 	t.broadcast(protocol.TypeHandSettled, protocol.HandSettledPayload{
 		HandID:      t.handID,
 		Board:       board,
@@ -799,6 +801,40 @@ func (t *Table) finishHand(events []texas.Event, now time.Time) {
 		}
 	}
 	t.broadcastSnapshot()
+}
+
+func (t *Table) buildPotResults(events []texas.Event, pools []texas.Pool) []protocol.PotResult {
+	winnerUsers := make(map[int]map[uint32]bool)
+	for _, ev := range events {
+		if ev.Kind != texas.EventSettleBill {
+			continue
+		}
+		if ev.PoolIndex < 0 || ev.PoolIndex >= len(pools) {
+			continue
+		}
+		if winnerUsers[ev.PoolIndex] == nil {
+			winnerUsers[ev.PoolIndex] = make(map[uint32]bool)
+		}
+		winnerUsers[ev.PoolIndex][ev.BillUserID] = true
+	}
+
+	out := make([]protocol.PotResult, 0, len(pools))
+	for i, pool := range pools {
+		winnerSeats := make([]int, 0, len(winnerUsers[i]))
+		for userID := range winnerUsers[i] {
+			if p := t.participantForUserID(userID); p != nil && p.seat >= 0 {
+				winnerSeats = append(winnerSeats, p.seat+1)
+			}
+		}
+		sort.Ints(winnerSeats)
+		out = append(out, protocol.PotResult{
+			Index:         i + 1,
+			Amount:        pool.Amount,
+			EligibleSeats: eligibleSeats(pool),
+			WinnerSeats:   winnerSeats,
+		})
+	}
+	return out
 }
 
 func (t *Table) finishResultDisplay(now time.Time) {

@@ -70,6 +70,8 @@ func testConfig() Config {
 func TestHeadsUpHandCompletesAndSpectatorCannotSeePrivateState(t *testing.T) {
 	table := NewTable(testConfig())
 	defer table.Close()
+	recorder := &recordingRecorder{}
+	table.SetRecorder(recorder)
 
 	alice := &fakeSink{}
 	bob := &fakeSink{}
@@ -151,6 +153,46 @@ func TestHeadsUpHandCompletesAndSpectatorCannotSeePrivateState(t *testing.T) {
 	if actions < 2 {
 		t.Fatalf("expected at least two actions, got %d", actions)
 	}
+	deadline = time.Now().Add(time.Second)
+	for time.Now().Before(deadline) && recorder.count() == 0 {
+		time.Sleep(5 * time.Millisecond)
+	}
+	records := recorder.all()
+	if len(records) != 1 {
+		t.Fatalf("expected one hand record, got %d", len(records))
+	}
+	if records[0].HandID == "" || len(records[0].Players) != 2 || len(records[0].Actions) < 2 {
+		t.Fatalf("incomplete hand record: %+v", records[0])
+	}
+	for _, player := range records[0].Players {
+		if len(player.HoleCards) != 2 {
+			t.Fatalf("hand record missing private cards: %+v", player)
+		}
+	}
+}
+
+type recordingRecorder struct {
+	mu      sync.Mutex
+	records []HandRecord
+}
+
+func (r *recordingRecorder) RecordHand(record HandRecord) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.records = append(r.records, record)
+	return nil
+}
+
+func (r *recordingRecorder) count() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.records)
+}
+
+func (r *recordingRecorder) all() []HandRecord {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]HandRecord(nil), r.records...)
 }
 
 func nextActionRequest(sink *fakeSink, seen int) (*protocol.ActionRequestPayload, int) {

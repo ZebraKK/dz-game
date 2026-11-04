@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/qbgames/qbdz-game/internal/gateway"
+	"github.com/qbgames/qbdz-game/internal/persistence"
 	"github.com/qbgames/qbdz-game/internal/tableapp"
 )
 
@@ -29,6 +30,8 @@ func main() {
 	var identityFlags stringList
 	addr := flag.String("addr", ":8080", "HTTP listen address")
 	serverID := flag.String("server-id", "poker-local-1", "authentication server ID")
+	identityFile := flag.String("identity-file", "", "JSON identity registry file")
+	historyFile := flag.String("history-file", "", "append-only JSONL hand history file")
 	smallBlind := flag.Uint64("small-blind", 10, "small blind")
 	bigBlind := flag.Uint64("big-blind", 20, "big blind")
 	startingStack := flag.Uint64("starting-stack", 2000, "starting stack")
@@ -48,12 +51,15 @@ func main() {
 		os.Exit(2)
 	}
 
-	if len(identityFlags) == 0 {
-		fmt.Fprintln(os.Stderr, "at least one -identity is required")
-		os.Exit(2)
-	}
-
 	identities := make([]gateway.Identity, 0, len(identityFlags))
+	if *identityFile != "" {
+		loaded, err := persistence.LoadIdentities(*identityFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "load identity file: %v\n", err)
+			os.Exit(2)
+		}
+		identities = append(identities, loaded...)
+	}
 	for _, raw := range identityFlags {
 		identity, err := parseIdentity(raw)
 		if err != nil {
@@ -61,6 +67,18 @@ func main() {
 			os.Exit(2)
 		}
 		identities = append(identities, identity)
+	}
+	if len(identities) == 0 {
+		fmt.Fprintln(os.Stderr, "at least one -identity or -identity-file is required")
+		os.Exit(2)
+	}
+	seenIDs := make(map[string]bool)
+	for _, identity := range identities {
+		if seenIDs[identity.PlayerID] {
+			fmt.Fprintf(os.Stderr, "duplicate playerId %q\n", identity.PlayerID)
+			os.Exit(2)
+		}
+		seenIDs[identity.PlayerID] = true
 	}
 
 	cfg := tableapp.DefaultConfig()
@@ -73,6 +91,14 @@ func main() {
 	cfg.ResultDisplay = *resultDisplay
 	table := tableapp.NewTable(cfg)
 	defer table.Close()
+	if *historyFile != "" {
+		recorder, err := persistence.NewJSONLHistoryRecorder(*historyFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "initialize history recorder: %v\n", err)
+			os.Exit(2)
+		}
+		table.SetRecorder(recorder)
+	}
 	gatewayServer := gateway.NewServer(table, identities, *serverID, slog.Default())
 
 	mux := http.NewServeMux()

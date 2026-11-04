@@ -27,10 +27,11 @@ const (
 )
 
 type Server struct {
-	table      *tableapp.Table
-	identities map[string]Identity
-	serverID   string
-	logger     *slog.Logger
+	table          *tableapp.Table
+	identities     map[string]Identity
+	serverID       string
+	logger         *slog.Logger
+	allowedOrigins []string
 
 	sessionsMu sync.Mutex
 	sessions   map[string]*session
@@ -53,12 +54,20 @@ func NewServer(table *tableapp.Table, identities []Identity, serverID string, lo
 	}
 }
 
+func (s *Server) SetAllowedOrigins(origins []string) {
+	s.allowedOrigins = append([]string(nil), origins...)
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/ws" {
 		http.NotFound(w, r)
 		return
 	}
-	conn, err := websocket.Accept(w, r, nil)
+	var acceptOptions *websocket.AcceptOptions
+	if len(s.allowedOrigins) > 0 {
+		acceptOptions = &websocket.AcceptOptions{OriginPatterns: s.allowedOrigins}
+	}
+	conn, err := websocket.Accept(w, r, acceptOptions)
 	if err != nil {
 		s.logger.Warn("websocket accept failed", "err", err)
 		return
@@ -153,6 +162,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sess.touch()
+		if !sess.allowMessage() {
+			sess.sendError(actorProtocolError(protocol.ErrRateLimited, "请求过快"), env.RequestID)
+			if sess.rateViolations() >= 10 {
+				sess.close(4008, "rate limited")
+				return
+			}
+			continue
+		}
 		if err := s.handleClientMessage(ctx, sess, env); err != nil {
 			sess.sendTableError(err, env.RequestID)
 		}
@@ -281,6 +298,11 @@ type session struct {
 	lastSeen    atomic.Int64
 	playerID    string
 	displayName string
+
+	rateMu              sync.Mutex
+	rateTokens          float64
+	rateLast            time.Time
+	rateViolationsCount int
 }
 
 func (s *session) Send(messageType string, stateVersion int64, payload any) bool {
@@ -298,6 +320,40 @@ func (s *session) Send(messageType string, stateVersion int64, payload any) bool
 
 func (s *session) touch() {
 	s.lastSeen.Store(time.Now().UnixNano())
+}
+
+func (s *session) allowMessage() bool {
+	const ratePerSecond = 20.0
+	const burst = 40.0
+	s.rateMu.Lock()
+	defer s.rateMu.Unlock()
+	now := time.Now()
+	if s.rateLast.IsZero() {
+		s.rateLast = now
+		s.rateTokens = burst
+	}
+	elapsed := now.Sub(s.rateLast).Seconds()
+	s.rateTokens = minFloat(burst, s.rateTokens+elapsed*ratePerSecond)
+	s.rateLast = now
+	if s.rateTokens < 1 {
+		s.rateViolationsCount++
+		return false
+	}
+	s.rateTokens--
+	return true
+}
+
+func (s *session) rateViolations() int {
+	s.rateMu.Lock()
+	defer s.rateMu.Unlock()
+	return s.rateViolationsCount
+}
+
+func minFloat(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (s *session) writeLoop() {

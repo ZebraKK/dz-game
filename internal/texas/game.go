@@ -644,7 +644,7 @@ func (g *Game) settle() []Event {
 	}
 
 	// Distribute each pool to its winner(s)
-	for _, pool := range pools {
+	for poolIndex, pool := range pools {
 		// Find best hand among eligible seats
 		winSeats := g.findWinners(pool, bestHands)
 		share := pool.Amount / uint64(len(winSeats))
@@ -672,6 +672,7 @@ func (g *Game) settle() []Event {
 				ServiceFee: fee,
 				HandCount:  g.handCount,
 				BillReason: g.resultReason,
+				PoolIndex:  poolIndex,
 			})
 		}
 	}
