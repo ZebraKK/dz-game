@@ -321,7 +321,7 @@ func (t *Table) handleSit(playerID string, preferred *int) *Error {
 	if err != nil {
 		return err
 	}
-	if !t.isIdle() {
+	if t.phase != "idle" && t.phase != "countdown" {
 		p.pendingSeat = seat
 		t.stateVersion++
 		if p.connected && p.sink != nil {
