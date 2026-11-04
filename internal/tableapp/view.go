@@ -95,10 +95,12 @@ func (t *Table) buildSeatView(seat int) protocol.SeatView {
 		Stack:         state.Chips,
 		StreetBet:     state.StreetBet,
 		HandCommitted: state.HandCommitted,
-		IsDealer:      t.game.DealerSeat() == seat,
-		IsSmallBlind:  t.game.SmallBlindSeat() == seat,
-		IsBigBlind:    t.game.BigBlindSeat() == seat,
 		RevealedCards: []string{},
+	}
+	if t.handID != "" {
+		view.IsDealer = t.game.DealerSeat() == seat
+		view.IsSmallBlind = t.game.SmallBlindSeat() == seat
+		view.IsBigBlind = t.game.BigBlindSeat() == seat
 	}
 	s := t.seats[seat]
 	if s != nil {
