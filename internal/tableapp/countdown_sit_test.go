@@ -58,14 +58,16 @@ func waitForSnapshotPhase(t *testing.T, sink *fakeSink, phase string) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		for _, message := range sink.snapshot() {
-			if message.Type != protocol.TypeSnapshot {
+		messages := sink.snapshot()
+		for i := len(messages) - 1; i >= 0; i-- {
+			if messages[i].Type != protocol.TypeSnapshot {
 				continue
 			}
-			payload, ok := message.Payload.(protocol.SnapshotPayload)
+			payload, ok := messages[i].Payload.(protocol.SnapshotPayload)
 			if ok && payload.Phase == phase {
 				return
 			}
+			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
