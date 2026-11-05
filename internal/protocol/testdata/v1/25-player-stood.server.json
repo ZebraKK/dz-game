@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "player.stood",
+  "deliverySeq": 44,
+  "stateVersion": 12,
+  "ts": "2026-11-05T21:01:00Z",
+  "payload": {
+    "seat": 2,
+    "playerId": "bob",
+    "reason": "ready_timeout"
+  }
+}

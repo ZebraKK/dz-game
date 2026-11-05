@@ -262,6 +262,8 @@ func (s *Server) handleClientMessage(ctx context.Context, sess *session, env pro
 		return s.table.CancelSit(ctx, sess.playerID)
 	case protocol.TypeSitOut:
 		return s.table.SitOut(ctx, sess.playerID)
+	case protocol.TypeReady:
+		return s.table.Ready(ctx, sess.playerID)
 	case protocol.TypeLeave:
 		return s.table.Leave(ctx, sess.playerID)
 	case protocol.TypeAction:

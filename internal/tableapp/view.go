@@ -37,6 +37,10 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 		snapshot.SmallBlindSeat = &sb
 		snapshot.BigBlindSeat = &bb
 	}
+	if t.phase == "ready" && !t.readyDeadline.IsZero() {
+		deadline := t.readyDeadline.UTC().Format(time.RFC3339Nano)
+		snapshot.ReadyDeadline = &deadline
+	}
 	if t.isHandActive() && t.turnID != "" && t.turnSeat >= 0 {
 		turnPlayerID := ""
 		if s := t.seats[t.turnSeat]; s != nil && s.participant != nil {
@@ -57,6 +61,9 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 	if p.seat >= 0 {
 		seat := p.seat
 		snapshot.You.Seat = intPtr(seat + 1)
+		if s := t.seats[seat]; s != nil && s.player != nil {
+			snapshot.You.Ready = s.player.IsReady
+		}
 		if t.handID != "" {
 			hole := t.game.PlayerCards(seat)
 			if hole[0].IsValid() && hole[1].IsValid() {
@@ -111,6 +118,9 @@ func (t *Table) buildSeatView(seat int) protocol.SeatView {
 				connection = "online"
 			}
 			view.Connection = &connection
+		}
+		if s.player != nil {
+			view.Ready = s.player.IsReady
 		}
 		view.LastAction = cloneLastAction(s.lastAction)
 		if len(s.revealed) > 0 {

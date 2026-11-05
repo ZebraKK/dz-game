@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "type": "ready.check",
+  "deliverySeq": 42,
+  "stateVersion": 10,
+  "ts": "2026-11-05T21:00:00Z",
+  "payload": {
+    "deadline": "2026-11-05T21:01:00Z"
+  }
+}

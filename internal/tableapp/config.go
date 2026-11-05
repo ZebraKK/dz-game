@@ -21,6 +21,7 @@ type Config struct {
 	DisconnectGrace time.Duration
 	StartCountdown  time.Duration
 	ResultDisplay   time.Duration
+	ReadyTimeout    time.Duration
 }
 
 func DefaultConfig() Config {
@@ -36,6 +37,7 @@ func DefaultConfig() Config {
 		DisconnectGrace: 90 * time.Second,
 		StartCountdown:  3 * time.Second,
 		ResultDisplay:   5 * time.Second,
+		ReadyTimeout:    60 * time.Second,
 	}
 }
 
@@ -51,6 +53,7 @@ func (c Config) runtimeConfig() protocol.RuntimeConfig {
 		DisconnectGraceMs: c.DisconnectGrace.Milliseconds(),
 		StartCountdownMs:  c.StartCountdown.Milliseconds(),
 		ResultDisplayMs:   c.ResultDisplay.Milliseconds(),
+		ReadyTimeoutMs:    c.ReadyTimeout.Milliseconds(),
 	}
 }
 

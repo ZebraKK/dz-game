@@ -27,6 +27,8 @@ type participant struct {
 	pendingSeat    int
 	connected      bool
 	disconnectedAt time.Time
+	chips          uint64
+	hasChips       bool
 }
 
 type seatState struct {
@@ -49,6 +51,7 @@ const (
 	cmdSit
 	cmdCancelSit
 	cmdSitOut
+	cmdReady
 	cmdLeave
 	cmdAction
 	cmdStatus
@@ -81,16 +84,17 @@ type Table struct {
 	seats        [MaxSeats]*seatState
 	nextUserID   uint32
 
-	stateVersion int64
-	phase        string
-	handID       string
-	handNumber   uint64
-	actionSeq    uint64
-	turnID       string
-	turnSeat     int
-	actionUntil  time.Time
-	countdownAt  time.Time
-	resultUntil  time.Time
+	stateVersion  int64
+	phase         string
+	handID        string
+	handNumber    uint64
+	actionSeq     uint64
+	turnID        string
+	turnSeat      int
+	actionUntil   time.Time
+	countdownAt   time.Time
+	resultUntil   time.Time
+	readyDeadline time.Time
 
 	handParticipants []int
 	startingStacks   map[int]uint64
@@ -154,6 +158,8 @@ func (t *Table) dispatch(cmd command) {
 		result.err = t.handleCancelSit(cmd.participantID)
 	case cmdSitOut:
 		result.err = t.handleSitOut(cmd.participantID)
+	case cmdReady:
+		result.err = t.handleReady(cmd.participantID)
 	case cmdLeave:
 		result.err = t.handleLeave(cmd.participantID)
 	case cmdAction:
@@ -210,6 +216,10 @@ func (t *Table) CancelSit(ctx context.Context, playerID string) error {
 
 func (t *Table) SitOut(ctx context.Context, playerID string) error {
 	return t.command(ctx, command{kind: cmdSitOut, participantID: playerID})
+}
+
+func (t *Table) Ready(ctx context.Context, playerID string) error {
+	return t.command(ctx, command{kind: cmdReady, participantID: playerID})
 }
 
 func (t *Table) Leave(ctx context.Context, playerID string) error {
@@ -310,6 +320,9 @@ func (t *Table) handleSit(playerID string, preferred *int) *Error {
 	if p.seat >= 0 {
 		s := t.seats[p.seat]
 		if s != nil && s.sittingOut {
+			if p.hasChips && p.chips == 0 {
+				return actorError(protocol.ErrNoChips, "筹码为 0，不能重新入座")
+			}
 			s.sittingOut = false
 			s.player.IsReady = true
 			t.stateVersion++
@@ -327,11 +340,14 @@ func (t *Table) handleSit(playerID string, preferred *int) *Error {
 	if p.pendingSeat >= 0 {
 		return actorError(protocol.ErrSitPending, "已有待处理的入座申请")
 	}
+	if p.hasChips && p.chips == 0 {
+		return actorError(protocol.ErrNoChips, "筹码为 0，不能入座")
+	}
 	seat, err := t.chooseSeat(preferred)
 	if err != nil {
 		return err
 	}
-	if t.phase != "idle" && t.phase != "countdown" {
+	if t.phase != "idle" && t.phase != "countdown" && t.phase != "ready" {
 		p.pendingSeat = seat
 		t.stateVersion++
 		if p.connected && p.sink != nil {
@@ -380,6 +396,34 @@ func (t *Table) handleSitOut(playerID string) *Error {
 		SitOut:   true,
 	})
 	t.broadcastSnapshot()
+	t.reconcileReadyState()
+	return nil
+}
+
+func (t *Table) handleReady(playerID string) *Error {
+	p := t.participants[playerID]
+	if p == nil || p.seat < 0 || t.seats[p.seat] == nil {
+		return actorError(protocol.ErrNotSeated, "当前不在座位上")
+	}
+	if t.phase != "ready" {
+		return actorError(protocol.ErrReadyCheckNotOpen, "当前不在下一手确认阶段")
+	}
+	s := t.seats[p.seat]
+	if s.sittingOut || s.player == nil || s.player.ChipDesk == 0 {
+		return actorError(protocol.ErrNoChips, "当前筹码不足，不能确认下一手")
+	}
+	if s.player.IsReady {
+		return nil
+	}
+	s.player.IsReady = true
+	t.stateVersion++
+	t.broadcast(protocol.TypePlayerReady, protocol.PlayerReadyPayload{
+		Seat:     p.seat + 1,
+		PlayerID: p.playerID,
+		Ready:    true,
+	})
+	t.broadcastSnapshot()
+	t.startCountdownIfReady()
 	return nil
 }
 
@@ -397,17 +441,25 @@ func (t *Table) handleLeave(playerID string) *Error {
 	}
 	seat := p.seat
 	playerIDForEvent := p.playerID
+	t.preserveParticipantChips(p, seat)
 	t.game.UnseatPlayer(seat)
 	t.seats[seat] = nil
 	p.seat = -1
 	t.stateVersion++
 	t.broadcast(protocol.TypePlayerLeft, protocol.PlayerLeftPayload{Seat: seat + 1, PlayerID: playerIDForEvent})
 	t.broadcastSnapshot()
+	t.reconcileReadyState()
 	return nil
 }
 
 func (t *Table) assignSeat(p *participant, seat int, announce bool) {
-	pl := player.NewPlayer(p.userID, p.displayName, "", t.cfg.StartingStack)
+	stack := t.cfg.StartingStack
+	if p.hasChips {
+		stack = p.chips
+	}
+	p.chips = stack
+	p.hasChips = true
+	pl := player.NewPlayer(p.userID, p.displayName, "", stack)
 	pl.IsReady = true
 	t.game.SeatPlayer(seat, pl)
 	t.seats[seat] = &seatState{participant: p, player: pl}
@@ -448,6 +500,8 @@ func (t *Table) chooseSeat(preferred *int) (int, *Error) {
 func (t *Table) onTick(now time.Time) {
 	t.expireDisconnectedPlayers(now)
 	switch {
+	case t.phase == "ready" && !t.readyDeadline.IsZero() && !now.Before(t.readyDeadline):
+		t.expireReadyCheck(now)
 	case t.phase == "countdown" && !now.Before(t.countdownAt):
 		t.startHand(now)
 	case t.isHandActive() && !t.actionUntil.IsZero() && !now.Before(t.actionUntil):
@@ -493,13 +547,14 @@ func (t *Table) expireDisconnectedPlayers(now time.Time) {
 }
 
 func (t *Table) startCountdownIfReady() {
-	if t.phase != "idle" {
+	if t.phase != "idle" && t.phase != "ready" {
 		return
 	}
-	if t.readyCount() < t.cfg.MinPlayers {
+	if t.eligibleSeatCount() < t.cfg.MinPlayers || !t.allEligibleReady() {
 		return
 	}
 	t.phase = "countdown"
+	t.readyDeadline = time.Time{}
 	t.countdownAt = time.Now().Add(t.cfg.StartCountdown)
 	t.stateVersion++
 	t.broadcastSnapshot()
@@ -513,6 +568,85 @@ func (t *Table) readyCount() int {
 		}
 	}
 	return count
+}
+
+func (t *Table) eligibleSeatCount() int {
+	count := 0
+	for _, s := range t.seats {
+		if s != nil && !s.sittingOut && s.player != nil && s.player.ChipDesk > 0 {
+			count++
+		}
+	}
+	return count
+}
+
+func (t *Table) allEligibleReady() bool {
+	for _, s := range t.seats {
+		if s == nil || s.sittingOut || s.player == nil || s.player.ChipDesk == 0 {
+			continue
+		}
+		if !s.player.IsReady {
+			return false
+		}
+	}
+	return true
+}
+
+func (t *Table) preserveParticipantChips(p *participant, seat int) {
+	if p == nil || seat < 0 || seat >= MaxSeats || p.seat != seat {
+		return
+	}
+	state := t.game.SeatState(seat)
+	p.chips = state.Chips
+	p.hasChips = true
+}
+
+func (t *Table) reconcileReadyState() {
+	if t.phase != "ready" {
+		return
+	}
+	if t.eligibleSeatCount() < t.cfg.MinPlayers {
+		t.phase = "idle"
+		t.readyDeadline = time.Time{}
+		t.stateVersion++
+		t.broadcastSnapshot()
+		return
+	}
+	t.startCountdownIfReady()
+}
+
+func (t *Table) expireReadyCheck(now time.Time) {
+	removed := false
+	for seat, s := range t.seats {
+		if s == nil || s.sittingOut || s.player == nil || s.player.ChipDesk == 0 || s.player.IsReady {
+			continue
+		}
+		p := s.participant
+		t.preserveParticipantChips(p, seat)
+		t.game.UnseatPlayer(seat)
+		t.seats[seat] = nil
+		p.seat = -1
+		p.pendingSeat = -1
+		t.stateVersion++
+		t.broadcast(protocol.TypePlayerStood, protocol.PlayerStoodPayload{
+			Seat:     seat + 1,
+			PlayerID: p.playerID,
+			Reason:   "ready_timeout",
+		})
+		removed = true
+	}
+	if !removed {
+		t.startCountdownIfReady()
+		return
+	}
+	t.readyDeadline = time.Time{}
+	if t.eligibleSeatCount() < t.cfg.MinPlayers {
+		t.phase = "idle"
+		t.stateVersion++
+		t.broadcastSnapshot()
+		return
+	}
+	t.startCountdownIfReady()
 }
 
 func (t *Table) startHand(now time.Time) {
@@ -850,6 +984,7 @@ func (t *Table) finishHand(events []texas.Event, now time.Time) {
 		if s == nil {
 			continue
 		}
+		t.preserveParticipantChips(s.participant, seat)
 		if s.player.ChipDesk == 0 {
 			s.sittingOut = true
 			s.player.IsReady = false
@@ -893,22 +1028,35 @@ func (t *Table) buildPotResults(events []texas.Event, pools []texas.Pool) []prot
 }
 
 func (t *Table) finishResultDisplay(now time.Time) {
+	t.phase = "ready"
+	for _, s := range t.seats {
+		if s == nil || s.player == nil {
+			continue
+		}
+		s.lastAction = nil
+		s.revealed = nil
+		if !s.sittingOut && s.player.ChipDesk > 0 {
+			s.player.IsReady = false
+		}
+	}
 	t.assignPendingSits()
-	t.phase = "idle"
 	t.handID = ""
 	t.handParticipants = nil
 	t.startingStacks = make(map[int]uint64)
 	t.lastActions = [MaxSeats]*protocol.LastActionView{}
 	t.revealedCards = [MaxSeats][]string{}
-	for _, s := range t.seats {
-		if s != nil {
-			s.lastAction = nil
-			s.revealed = nil
-		}
-	}
 	t.stateVersion++
+	if t.eligibleSeatCount() < t.cfg.MinPlayers {
+		t.phase = "idle"
+		t.readyDeadline = time.Time{}
+		t.broadcastSnapshot()
+		return
+	}
+	t.readyDeadline = now.Add(t.cfg.ReadyTimeout)
+	t.broadcast(protocol.TypeReadyCheck, protocol.ReadyCheckPayload{
+		Deadline: t.readyDeadline.UTC().Format(time.RFC3339Nano),
+	})
 	t.broadcastSnapshot()
-	t.startCountdownIfReady()
 }
 
 func (t *Table) assignPendingSits() {

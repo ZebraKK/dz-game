@@ -42,6 +42,7 @@ type RuntimeConfig struct {
 	DisconnectGraceMs int64  `json:"disconnectGraceMs"`
 	StartCountdownMs  int64  `json:"startCountdownMs"`
 	ResultDisplayMs   int64  `json:"resultDisplayMs"`
+	ReadyTimeoutMs    int64  `json:"readyTimeoutMs"`
 }
 
 type PotView struct {
@@ -68,6 +69,7 @@ type SeatView struct {
 	DisplayName   *string         `json:"displayName"`
 	Participation *string         `json:"participation"`
 	Connection    *string         `json:"connection"`
+	Ready         bool            `json:"ready"`
 	Stack         uint64          `json:"stack"`
 	StreetBet     uint64          `json:"streetBet"`
 	HandCommitted uint64          `json:"handCommitted"`
@@ -92,6 +94,7 @@ type SelfView struct {
 	Seat         *int          `json:"seat"`
 	HoleCards    []string      `json:"holeCards"`
 	PendingSit   bool          `json:"pendingSit"`
+	Ready        bool          `json:"ready"`
 	LegalActions []LegalAction `json:"legalActions"`
 	TurnID       *string       `json:"turnId"`
 }
@@ -107,6 +110,7 @@ type SnapshotPayload struct {
 	Board          []string      `json:"board"`
 	Pot            PotView       `json:"pot"`
 	CurrentTurn    *TurnView     `json:"currentTurn"`
+	ReadyDeadline  *string       `json:"readyDeadline"`
 	Seats          []SeatView    `json:"seats"`
 	You            SelfView      `json:"you"`
 }
@@ -141,6 +145,22 @@ type PlayerSitOutPayload struct {
 type PlayerLeftPayload struct {
 	Seat     int    `json:"seat"`
 	PlayerID string `json:"playerId"`
+}
+
+type ReadyCheckPayload struct {
+	Deadline string `json:"deadline"`
+}
+
+type PlayerReadyPayload struct {
+	Seat     int    `json:"seat"`
+	PlayerID string `json:"playerId"`
+	Ready    bool   `json:"ready"`
+}
+
+type PlayerStoodPayload struct {
+	Seat     int    `json:"seat"`
+	PlayerID string `json:"playerId"`
+	Reason   string `json:"reason"`
 }
 
 type HandStartedPayload struct {
@@ -285,6 +305,8 @@ const (
 	ErrInvalidSeat         = "INVALID_SEAT"
 	ErrSeatOccupied        = "SEAT_OCCUPIED"
 	ErrSitPending          = "SIT_PENDING"
+	ErrNoChips             = "NO_CHIPS"
+	ErrReadyCheckNotOpen   = "READY_CHECK_NOT_OPEN"
 	ErrHandInProgress      = "HAND_IN_PROGRESS"
 	ErrNotYourTurn         = "NOT_YOUR_TURN"
 	ErrStaleTurn           = "STALE_TURN"

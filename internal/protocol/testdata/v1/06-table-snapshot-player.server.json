@@ -1,233 +1,225 @@
 {
-    "v":  1,
-    "type":  "table.snapshot",
-    "deliverySeq":  4,
-    "stateVersion":  21,
-    "ts":  "2026-11-03T15:02:00.000Z",
-    "payload":  {
-                    "tableId":  "main",
-                    "handId":  "hand-20261103-0001",
-                    "phase":  "preflop",
-                    "config":  {
-                                   "maxSeats":  9,
-                                   "smallBlind":  10,
-                                   "bigBlind":  20,
-                                   "ante":  0,
-                                   "actionTimeoutMs":  90000,
-                                   "disconnectGraceMs":  90000,
-                                   "startCountdownMs":  3000,
-                                   "resultDisplayMs":  5000,
-                                   "startingStack":  2000,
-                                   "rakePercent":  0
-                               },
-                    "buttonSeat":  1,
-                    "smallBlindSeat":  2,
-                    "bigBlindSeat":  3,
-                    "board":  [
-
-                              ],
-                    "pot":  {
-                                "total":  30
-                            },
-                    "currentTurn":  {
-                                        "turnId":  "turn-hand-20261103-0001-preflop-alice-001",
-                                        "seat":  1,
-                                        "playerId":  "alice",
-                                        "deadline":  "2026-11-03T15:03:30.000Z"
-                                    },
-                    "seats":  [
-                                  {
-                                      "seat":  1,
-                                      "occupancy":  "occupied",
-                                      "playerId":  "alice",
-                                      "displayName":  "Alice",
-                                      "participation":  "active",
-                                      "connection":  "online",
-                                      "stack":  2000,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  true,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  2,
-                                      "occupancy":  "occupied",
-                                      "playerId":  "bob",
-                                      "displayName":  "Bob",
-                                      "participation":  "active",
-                                      "connection":  "online",
-                                      "stack":  1990,
-                                      "streetBet":  10,
-                                      "handCommitted":  10,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  true,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  3,
-                                      "occupancy":  "occupied",
-                                      "playerId":  "carol",
-                                      "displayName":  "Carol",
-                                      "participation":  "active",
-                                      "connection":  "online",
-                                      "stack":  1980,
-                                      "streetBet":  20,
-                                      "handCommitted":  20,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  true,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  4,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  5,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  6,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  7,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  8,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  },
-                                  {
-                                      "seat":  9,
-                                      "occupancy":  "empty",
-                                      "playerId":  null,
-                                      "displayName":  null,
-                                      "participation":  null,
-                                      "connection":  null,
-                                      "stack":  0,
-                                      "streetBet":  0,
-                                      "handCommitted":  0,
-                                      "isDealer":  false,
-                                      "isSmallBlind":  false,
-                                      "isBigBlind":  false,
-                                      "lastAction":  null,
-                                      "revealedCards":  [
-
-                                                        ]
-                                  }
-                              ],
-                    "you":  {
-                                "playerId":  "alice",
-                                "displayName":  "Alice",
-                                "role":  "player",
-                                "seat":  1,
-                                "holeCards":  [
-                                                  "As",
-                                                  "Kd"
-                                              ],
-                                "pendingSit":  false,
-                                "legalActions":  [
-                                                     {
-                                                         "type":  "fold"
-                                                     },
-                                                     {
-                                                         "type":  "call",
-                                                         "amount":  20
-                                                     },
-                                                     {
-                                                         "type":  "raise",
-                                                         "minAmount":  40,
-                                                         "maxAmount":  2000
-                                                     },
-                                                     {
-                                                         "type":  "all_in",
-                                                         "amount":  2000
-                                                     }
-                                                 ],
-                                "turnId":  "turn-hand-20261103-0001-preflop-alice-001"
-                            }
-                }
+  "v": 1,
+  "type": "table.snapshot",
+  "deliverySeq": 4,
+  "stateVersion": 21,
+  "ts": "2026-11-03T15:02:00.000Z",
+  "payload": {
+    "tableId": "main",
+    "handId": "hand-20261103-0001",
+    "phase": "preflop",
+    "config": {
+      "maxSeats": 9,
+      "smallBlind": 10,
+      "bigBlind": 20,
+      "ante": 0,
+      "actionTimeoutMs": 90000,
+      "disconnectGraceMs": 90000,
+      "startCountdownMs": 3000,
+      "resultDisplayMs": 5000,
+      "startingStack": 2000,
+      "rakePercent": 0,
+      "readyTimeoutMs": 60000
+    },
+    "buttonSeat": 1,
+    "smallBlindSeat": 2,
+    "bigBlindSeat": 3,
+    "board": [],
+    "pot": {
+      "total": 30
+    },
+    "currentTurn": {
+      "turnId": "turn-hand-20261103-0001-preflop-alice-001",
+      "seat": 1,
+      "playerId": "alice",
+      "deadline": "2026-11-03T15:03:30.000Z"
+    },
+    "seats": [
+      {
+        "seat": 1,
+        "occupancy": "occupied",
+        "playerId": "alice",
+        "displayName": "Alice",
+        "participation": "active",
+        "connection": "online",
+        "stack": 2000,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": true,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 2,
+        "occupancy": "occupied",
+        "playerId": "bob",
+        "displayName": "Bob",
+        "participation": "active",
+        "connection": "online",
+        "stack": 1990,
+        "streetBet": 10,
+        "handCommitted": 10,
+        "isDealer": false,
+        "isSmallBlind": true,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 3,
+        "occupancy": "occupied",
+        "playerId": "carol",
+        "displayName": "Carol",
+        "participation": "active",
+        "connection": "online",
+        "stack": 1980,
+        "streetBet": 20,
+        "handCommitted": 20,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": true,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 4,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 5,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 6,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 7,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 8,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      },
+      {
+        "seat": 9,
+        "occupancy": "empty",
+        "playerId": null,
+        "displayName": null,
+        "participation": null,
+        "connection": null,
+        "stack": 0,
+        "streetBet": 0,
+        "handCommitted": 0,
+        "isDealer": false,
+        "isSmallBlind": false,
+        "isBigBlind": false,
+        "lastAction": null,
+        "revealedCards": [],
+        "ready": false
+      }
+    ],
+    "you": {
+      "playerId": "alice",
+      "displayName": "Alice",
+      "role": "player",
+      "seat": 1,
+      "holeCards": [
+        "As",
+        "Kd"
+      ],
+      "pendingSit": false,
+      "legalActions": [
+        {
+          "type": "fold"
+        },
+        {
+          "type": "call",
+          "amount": 20
+        },
+        {
+          "type": "raise",
+          "minAmount": 40,
+          "maxAmount": 2000
+        },
+        {
+          "type": "all_in",
+          "amount": 2000
+        }
+      ],
+      "turnId": "turn-hand-20261103-0001-preflop-alice-001",
+      "ready": true
+    },
+    "readyDeadline": null
+  }
 }

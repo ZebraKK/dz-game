@@ -47,6 +47,7 @@ func main() {
 	disconnectGrace := flag.Duration("disconnect-grace", time.Duration(defaults.Table.DisconnectGraceMs)*time.Millisecond, "disconnect grace")
 	startCountdown := flag.Duration("start-countdown", time.Duration(defaults.Table.StartCountdownMs)*time.Millisecond, "pre-hand countdown")
 	resultDisplay := flag.Duration("result-display", time.Duration(defaults.Table.ResultDisplayMs)*time.Millisecond, "settlement display duration")
+	readyTimeout := flag.Duration("ready-timeout", time.Duration(defaults.Table.ReadyTimeoutMs)*time.Millisecond, "next-hand ready confirmation timeout")
 	flag.Var(&identityFlags, "identity", "registered identity as playerId=displayName=base64url-public-key")
 	flag.Var(&allowedOrigins, "allowed-origins", "allowed WebSocket Origin pattern; repeatable")
 	flag.Parse()
@@ -101,6 +102,9 @@ func main() {
 	}
 	if explicit["result-display"] {
 		runtime.Table.ResultDisplayMs = resultDisplay.Milliseconds()
+	}
+	if explicit["ready-timeout"] {
+		runtime.Table.ReadyTimeoutMs = readyTimeout.Milliseconds()
 	}
 	if explicit["allowed-origins"] {
 		runtime.AllowedOrigins = append([]string(nil), allowedOrigins...)

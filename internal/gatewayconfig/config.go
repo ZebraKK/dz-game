@@ -30,6 +30,7 @@ type TableConfig struct {
 	DisconnectGraceMs int64  `yaml:"disconnectGraceMs"`
 	StartCountdownMs  int64  `yaml:"startCountdownMs"`
 	ResultDisplayMs   int64  `yaml:"resultDisplayMs"`
+	ReadyTimeoutMs    int64  `yaml:"readyTimeoutMs"`
 }
 
 func Default() Config {
@@ -44,6 +45,7 @@ func Default() Config {
 			DisconnectGraceMs: 90000,
 			StartCountdownMs:  3000,
 			ResultDisplayMs:   5000,
+			ReadyTimeoutMs:    60000,
 		},
 	}
 }
@@ -101,6 +103,9 @@ func (c Config) Validate() error {
 	if c.Table.ResultDisplayMs <= 0 {
 		return fmt.Errorf("table.resultDisplayMs must be greater than zero")
 	}
+	if c.Table.ReadyTimeoutMs <= 0 {
+		return fmt.Errorf("table.readyTimeoutMs must be greater than zero")
+	}
 	return nil
 }
 
@@ -113,6 +118,7 @@ func (c Config) NewTableConfig() tableapp.Config {
 	cfg.DisconnectGrace = time.Duration(c.Table.DisconnectGraceMs) * time.Millisecond
 	cfg.StartCountdown = time.Duration(c.Table.StartCountdownMs) * time.Millisecond
 	cfg.ResultDisplay = time.Duration(c.Table.ResultDisplayMs) * time.Millisecond
+	cfg.ReadyTimeout = time.Duration(c.Table.ReadyTimeoutMs) * time.Millisecond
 	return cfg
 }
 
