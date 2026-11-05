@@ -13,7 +13,8 @@ table:
   smallBlind: 10
   bigBlind: 20
   startingStack: 2000
-  actionTimeoutMs: 90000
-  disconnectGraceMs: 90000
-  startCountdownMs: 3000
-  resultDisplayMs: 5000
+  actionTimeoutMs: 180000
+  disconnectGraceMs: 300000
+  startCountdownMs: 30000
+  resultDisplayMs: 30000
+  readyTimeoutMs: 300000
