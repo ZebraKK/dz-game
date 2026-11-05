@@ -15,6 +15,6 @@ table:
   startingStack: 2000
   actionTimeoutMs: 180000
   disconnectGraceMs: 300000
-  startCountdownMs: 30000
+  startCountdownMs: 10000
   resultDisplayMs: 30000
   readyTimeoutMs: 300000
