@@ -13,8 +13,8 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 		TableID: t.cfg.TableID,
 		Phase:   t.phase,
 		Config:  t.cfg.runtimeConfig(),
-		Board:   cardStrings(t.game.Community()),
-		Pot:     protocol.PotView{Total: t.game.PotSize()},
+		Board:   []string{},
+		Pot:     protocol.PotView{},
 		Seats:   make([]protocol.SeatView, 0, MaxSeats),
 		You: protocol.SelfView{
 			PlayerID:     p.playerID,
@@ -25,10 +25,9 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 			LegalActions: []protocol.LegalAction{},
 		},
 	}
-	if snapshot.Board == nil {
-		snapshot.Board = []string{}
-	}
 	if t.handID != "" {
+		snapshot.Board = cardStrings(t.game.Community())
+		snapshot.Pot = protocol.PotView{Total: t.game.PotSize()}
 		handID := t.handID
 		snapshot.HandID = &handID
 		button := t.game.DealerSeat() + 1
@@ -93,11 +92,11 @@ func (t *Table) buildSeatView(seat int) protocol.SeatView {
 		Seat:          seat + 1,
 		Occupancy:     "occupied",
 		Stack:         state.Chips,
-		StreetBet:     state.StreetBet,
-		HandCommitted: state.HandCommitted,
 		RevealedCards: []string{},
 	}
 	if t.handID != "" {
+		view.StreetBet = state.StreetBet
+		view.HandCommitted = state.HandCommitted
 		view.IsDealer = t.game.DealerSeat() == seat
 		view.IsSmallBlind = t.game.SmallBlindSeat() == seat
 		view.IsBigBlind = t.game.BigBlindSeat() == seat
