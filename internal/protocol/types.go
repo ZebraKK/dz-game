@@ -87,6 +87,13 @@ type LegalAction struct {
 	MaxAmount uint64 `json:"maxAmount,omitempty"`
 }
 
+type SpectatorView struct {
+	PlayerID    string `json:"playerId"`
+	DisplayName string `json:"displayName"`
+	Connection  string `json:"connection"`
+	PendingSit  bool   `json:"pendingSit"`
+}
+
 type SelfView struct {
 	PlayerID     string        `json:"playerId"`
 	DisplayName  string        `json:"displayName"`
@@ -100,19 +107,20 @@ type SelfView struct {
 }
 
 type SnapshotPayload struct {
-	TableID        string        `json:"tableId"`
-	HandID         *string       `json:"handId"`
-	Phase          string        `json:"phase"`
-	Config         RuntimeConfig `json:"config"`
-	ButtonSeat     *int          `json:"buttonSeat"`
-	SmallBlindSeat *int          `json:"smallBlindSeat"`
-	BigBlindSeat   *int          `json:"bigBlindSeat"`
-	Board          []string      `json:"board"`
-	Pot            PotView       `json:"pot"`
-	CurrentTurn    *TurnView     `json:"currentTurn"`
-	ReadyDeadline  *string       `json:"readyDeadline"`
-	Seats          []SeatView    `json:"seats"`
-	You            SelfView      `json:"you"`
+	TableID        string          `json:"tableId"`
+	HandID         *string         `json:"handId"`
+	Phase          string          `json:"phase"`
+	Config         RuntimeConfig   `json:"config"`
+	ButtonSeat     *int            `json:"buttonSeat"`
+	SmallBlindSeat *int            `json:"smallBlindSeat"`
+	BigBlindSeat   *int            `json:"bigBlindSeat"`
+	Board          []string        `json:"board"`
+	Pot            PotView         `json:"pot"`
+	CurrentTurn    *TurnView       `json:"currentTurn"`
+	ReadyDeadline  *string         `json:"readyDeadline"`
+	Seats          []SeatView      `json:"seats"`
+	Spectators     []SpectatorView `json:"spectators"`
+	You            SelfView        `json:"you"`
 }
 
 type SitPayload struct {

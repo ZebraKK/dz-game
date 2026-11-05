@@ -200,6 +200,7 @@
       "turnId": null,
       "ready": false
     },
-    "readyDeadline": null
+    "readyDeadline": null,
+    "spectators": []
   }
 }

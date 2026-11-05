@@ -220,6 +220,7 @@
       "turnId": "turn-hand-20261103-0001-preflop-alice-001",
       "ready": true
     },
-    "readyDeadline": null
+    "readyDeadline": null,
+    "spectators": []
   }
 }

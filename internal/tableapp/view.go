@@ -1,6 +1,7 @@
 package tableapp
 
 import (
+	"sort"
 	"time"
 
 	"github.com/qbgames/qbdz-game/internal/player"
@@ -10,12 +11,13 @@ import (
 
 func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 	snapshot := protocol.SnapshotPayload{
-		TableID: t.cfg.TableID,
-		Phase:   t.phase,
-		Config:  t.cfg.runtimeConfig(),
-		Board:   []string{},
-		Pot:     protocol.PotView{},
-		Seats:   make([]protocol.SeatView, 0, MaxSeats),
+		TableID:    t.cfg.TableID,
+		Phase:      t.phase,
+		Config:     t.cfg.runtimeConfig(),
+		Board:      []string{},
+		Pot:        protocol.PotView{},
+		Seats:      make([]protocol.SeatView, 0, MaxSeats),
+		Spectators: make([]protocol.SpectatorView, 0),
 		You: protocol.SelfView{
 			PlayerID:     p.playerID,
 			DisplayName:  p.displayName,
@@ -57,6 +59,27 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 	for seat := 0; seat < MaxSeats; seat++ {
 		snapshot.Seats = append(snapshot.Seats, t.buildSeatView(seat))
 	}
+	for _, participant := range t.participants {
+		if participant.seat >= 0 {
+			continue
+		}
+		connection := "offline"
+		if participant.connected {
+			connection = "online"
+		}
+		snapshot.Spectators = append(snapshot.Spectators, protocol.SpectatorView{
+			PlayerID:    participant.playerID,
+			DisplayName: participant.displayName,
+			Connection:  connection,
+			PendingSit:  participant.pendingSeat >= 0,
+		})
+	}
+	sort.Slice(snapshot.Spectators, func(i, j int) bool {
+		if snapshot.Spectators[i].DisplayName == snapshot.Spectators[j].DisplayName {
+			return snapshot.Spectators[i].PlayerID < snapshot.Spectators[j].PlayerID
+		}
+		return snapshot.Spectators[i].DisplayName < snapshot.Spectators[j].DisplayName
+	})
 
 	if p.seat >= 0 {
 		seat := p.seat
