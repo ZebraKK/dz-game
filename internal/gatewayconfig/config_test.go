@@ -18,6 +18,8 @@ table:
   smallBlind: 25
   bigBlind: 50
   actionTimeoutMs: 15000
+  thinkingExtensionMs: 7000
+  actionWarningMs: 5000
 `
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
@@ -63,6 +65,8 @@ func TestNewTableConfig(t *testing.T) {
 	cfg.Table.SmallBlind = 25
 	cfg.Table.BigBlind = 50
 	cfg.Table.ActionTimeoutMs = 12000
+	cfg.Table.ThinkingExtensionMs = 9000
+	cfg.Table.ActionWarningMs = 3000
 	got := cfg.NewTableConfig()
 	if got.SmallBlind != 25 || got.BigBlind != 50 {
 		t.Fatalf("unexpected blinds: %+v", got)

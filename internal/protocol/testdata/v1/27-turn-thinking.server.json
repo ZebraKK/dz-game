@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "type": "turn.thinking",
+  "deliverySeq": 27,
+  "stateVersion": 42,
+  "ts": "2026-11-06T00:40:00.000Z",
+  "payload": {
+    "handId": "hand-20261106-0001",
+    "turnId": "turn-hand-20261106-0001-002",
+    "playerId": "alice",
+    "seat": 1,
+    "extensionMs": 180000,
+    "deadline": "2026-11-06T00:43:00.000Z"
+  }
+}

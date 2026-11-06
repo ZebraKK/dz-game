@@ -32,17 +32,19 @@ type JoinOKPayload struct {
 }
 
 type RuntimeConfig struct {
-	MaxSeats          int    `json:"maxSeats"`
-	SmallBlind        uint64 `json:"smallBlind"`
-	BigBlind          uint64 `json:"bigBlind"`
-	Ante              uint64 `json:"ante"`
-	StartingStack     uint64 `json:"startingStack"`
-	RakePercent       int    `json:"rakePercent"`
-	ActionTimeoutMs   int64  `json:"actionTimeoutMs"`
-	DisconnectGraceMs int64  `json:"disconnectGraceMs"`
-	StartCountdownMs  int64  `json:"startCountdownMs"`
-	ResultDisplayMs   int64  `json:"resultDisplayMs"`
-	ReadyTimeoutMs    int64  `json:"readyTimeoutMs"`
+	MaxSeats            int    `json:"maxSeats"`
+	SmallBlind          uint64 `json:"smallBlind"`
+	BigBlind            uint64 `json:"bigBlind"`
+	Ante                uint64 `json:"ante"`
+	StartingStack       uint64 `json:"startingStack"`
+	RakePercent         int    `json:"rakePercent"`
+	ActionTimeoutMs     int64  `json:"actionTimeoutMs"`
+	ThinkingExtensionMs int64  `json:"thinkingExtensionMs"`
+	ActionWarningMs     int64  `json:"actionWarningMs"`
+	DisconnectGraceMs   int64  `json:"disconnectGraceMs"`
+	StartCountdownMs    int64  `json:"startCountdownMs"`
+	ResultDisplayMs     int64  `json:"resultDisplayMs"`
+	ReadyTimeoutMs      int64  `json:"readyTimeoutMs"`
 }
 
 type PotView struct {
@@ -54,6 +56,7 @@ type TurnView struct {
 	Seat     int    `json:"seat"`
 	PlayerID string `json:"playerId"`
 	Deadline string `json:"deadline"`
+	Thinking bool   `json:"thinking"`
 }
 
 type LastActionView struct {
@@ -196,14 +199,33 @@ type HoleCardsPayload struct {
 }
 
 type ActionRequestPayload struct {
-	HandID       string        `json:"handId"`
-	TurnID       string        `json:"turnId"`
-	PlayerID     string        `json:"playerId"`
-	Seat         int           `json:"seat"`
-	Deadline     string        `json:"deadline"`
-	ToCall       uint64        `json:"toCall"`
-	Pot          uint64        `json:"pot"`
-	LegalActions []LegalAction `json:"legalActions"`
+	HandID              string        `json:"handId"`
+	TurnID              string        `json:"turnId"`
+	PlayerID            string        `json:"playerId"`
+	Seat                int           `json:"seat"`
+	Deadline            string        `json:"deadline"`
+	ToCall              uint64        `json:"toCall"`
+	Pot                 uint64        `json:"pot"`
+	LegalActions        []LegalAction `json:"legalActions"`
+	ThinkingAvailable   bool          `json:"thinkingAvailable"`
+	ThinkingExtensionMs int64         `json:"thinkingExtensionMs"`
+}
+
+type TurnThinkingPayload struct {
+	HandID      string `json:"handId"`
+	TurnID      string `json:"turnId"`
+	PlayerID    string `json:"playerId"`
+	Seat        int    `json:"seat"`
+	ExtensionMs int64  `json:"extensionMs"`
+	Deadline    string `json:"deadline"`
+}
+
+type ActionWarningPayload struct {
+	HandID              string `json:"handId"`
+	TurnID              string `json:"turnId"`
+	RemainingMs         int64  `json:"remainingMs"`
+	ThinkingAvailable   bool   `json:"thinkingAvailable"`
+	ThinkingExtensionMs int64  `json:"thinkingExtensionMs"`
 }
 
 type PlayerAction struct {
@@ -320,6 +342,7 @@ const (
 	ErrStaleTurn           = "STALE_TURN"
 	ErrInvalidAction       = "INVALID_ACTION"
 	ErrActionTimeout       = "ACTION_TIMEOUT"
+	ErrThinkingAlreadyUsed = "THINKING_ALREADY_USED"
 	ErrIDConflict          = "IDEMPOTENCY_CONFLICT"
 	ErrHeartbeatTimeout    = "HEARTBEAT_TIMEOUT"
 )

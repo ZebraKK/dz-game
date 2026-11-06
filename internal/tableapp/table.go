@@ -54,6 +54,7 @@ const (
 	cmdReady
 	cmdLeave
 	cmdAction
+	cmdThink
 	cmdStatus
 	cmdDisconnect
 )
@@ -84,17 +85,20 @@ type Table struct {
 	seats        [MaxSeats]*seatState
 	nextUserID   uint32
 
-	stateVersion  int64
-	phase         string
-	handID        string
-	handNumber    uint64
-	actionSeq     uint64
-	turnID        string
-	turnSeat      int
-	actionUntil   time.Time
-	countdownAt   time.Time
-	resultUntil   time.Time
-	readyDeadline time.Time
+	stateVersion      int64
+	phase             string
+	handID            string
+	handNumber        uint64
+	actionSeq         uint64
+	turnID            string
+	turnSeat          int
+	actionUntil       time.Time
+	thinkingUsed      bool
+	thinkingActive    bool
+	actionWarningSent bool
+	countdownAt       time.Time
+	resultUntil       time.Time
+	readyDeadline     time.Time
 
 	handParticipants []int
 	startingStacks   map[int]uint64
@@ -164,6 +168,8 @@ func (t *Table) dispatch(cmd command) {
 		result.err = t.handleLeave(cmd.participantID)
 	case cmdAction:
 		result.err = t.handleAction(cmd.participantID, cmd.action)
+	case cmdThink:
+		result.err = t.handleThink(cmd.participantID)
 	case cmdStatus:
 		if p := t.participants[cmd.participantID]; p != nil {
 			t.sendSnapshot(p)
@@ -228,6 +234,10 @@ func (t *Table) Leave(ctx context.Context, playerID string) error {
 
 func (t *Table) Action(ctx context.Context, playerID string, action protocol.ActionPayload) error {
 	return t.command(ctx, command{kind: cmdAction, participantID: playerID, action: action})
+}
+
+func (t *Table) Think(ctx context.Context, playerID string) error {
+	return t.command(ctx, command{kind: cmdThink, participantID: playerID})
 }
 
 func (t *Table) Status(ctx context.Context, playerID string) error {
@@ -306,6 +316,7 @@ func (t *Table) handleDisconnect(playerID string, sink ClientSink) {
 		deadline := p.disconnectedAt.Add(t.cfg.DisconnectGrace)
 		if t.actionUntil.IsZero() || deadline.Before(t.actionUntil) {
 			t.actionUntil = deadline
+			t.actionWarningSent = false
 		}
 	}
 	t.stateVersion++
@@ -499,6 +510,7 @@ func (t *Table) chooseSeat(preferred *int) (int, *Error) {
 
 func (t *Table) onTick(now time.Time) {
 	t.expireDisconnectedPlayers(now)
+	t.maybeSendActionWarning(now)
 	switch {
 	case t.phase == "ready" && !t.readyDeadline.IsZero() && !now.Before(t.readyDeadline):
 		t.expireReadyCheck(now)
@@ -662,6 +674,9 @@ func (t *Table) startHand(now time.Time) {
 	t.turnID = ""
 	t.turnSeat = -1
 	t.actionUntil = time.Time{}
+	t.thinkingUsed = false
+	t.thinkingActive = false
+	t.actionWarningSent = false
 	t.actionCache = make(map[string]cachedAction)
 	t.handStartedAt = now
 	t.actionLog = nil
@@ -733,11 +748,17 @@ func (t *Table) sendActionRequestToCurrent(now time.Time) {
 		t.turnSeat = -1
 		t.turnID = ""
 		t.actionUntil = time.Time{}
+		t.thinkingUsed = false
+		t.thinkingActive = false
+		t.actionWarningSent = false
 		return
 	}
 	t.turnSeat = seat
 	t.actionSeq++
 	t.turnID = fmt.Sprintf("turn-%s-%d", t.handID, t.actionSeq)
+	t.thinkingUsed = false
+	t.thinkingActive = false
+	t.actionWarningSent = false
 	deadline := now.Add(t.cfg.ActionTimeout)
 	if s := t.seats[seat]; s != nil {
 		if p := s.participant; p != nil && !p.connected && !p.disconnectedAt.IsZero() {
@@ -746,9 +767,11 @@ func (t *Table) sendActionRequestToCurrent(now time.Time) {
 				deadline = graceDeadline
 			}
 		}
-		t.sendActionRequest(s.participant)
 	}
 	t.actionUntil = deadline
+	if s := t.seats[seat]; s != nil {
+		t.sendActionRequest(s.participant)
+	}
 }
 
 func (t *Table) sendActionRequest(p *participant) {
@@ -760,14 +783,73 @@ func (t *Table) sendActionRequest(p *participant) {
 		return
 	}
 	p.sink.Send(protocol.TypeActionRequest, t.stateVersion, protocol.ActionRequestPayload{
-		HandID:       t.handID,
-		TurnID:       t.turnID,
-		PlayerID:     p.playerID,
-		Seat:         p.seat + 1,
-		Deadline:     t.actionUntil.UTC().Format(time.RFC3339Nano),
-		ToCall:       t.game.ToCall(),
-		Pot:          t.game.PotSize(),
-		LegalActions: actions,
+		HandID:              t.handID,
+		TurnID:              t.turnID,
+		PlayerID:            p.playerID,
+		Seat:                p.seat + 1,
+		Deadline:            t.actionUntil.UTC().Format(time.RFC3339Nano),
+		ToCall:              t.game.ToCall(),
+		Pot:                 t.game.PotSize(),
+		LegalActions:        actions,
+		ThinkingAvailable:   !t.thinkingUsed && t.cfg.ThinkingExtension > 0,
+		ThinkingExtensionMs: t.cfg.ThinkingExtension.Milliseconds(),
+	})
+}
+
+func (t *Table) handleThink(playerID string) *Error {
+	p := t.participants[playerID]
+	if p == nil || p.seat < 0 || t.seats[p.seat] == nil {
+		return actorError(protocol.ErrNotSeated, "当前不在座位上")
+	}
+	if t.turnID == "" || p.seat != t.turnSeat || !t.isHandActive() {
+		return actorError(protocol.ErrNotYourTurn, "当前没有轮到你行动")
+	}
+	if t.cfg.ThinkingExtension <= 0 {
+		return actorError(protocol.ErrInvalidAction, "当前未启用思考延长")
+	}
+	if t.thinkingUsed {
+		return actorError(protocol.ErrThinkingAlreadyUsed, "本回合已使用过思考延长")
+	}
+	if t.actionUntil.IsZero() {
+		return actorError(protocol.ErrStaleTurn, "行动已过期")
+	}
+	t.thinkingUsed = true
+	t.thinkingActive = true
+	t.actionWarningSent = false
+	t.actionUntil = t.actionUntil.Add(t.cfg.ThinkingExtension)
+	t.stateVersion++
+	deadline := t.actionUntil.UTC().Format(time.RFC3339Nano)
+	t.broadcast(protocol.TypeTurnThinking, protocol.TurnThinkingPayload{
+		HandID:      t.handID,
+		TurnID:      t.turnID,
+		PlayerID:    p.playerID,
+		Seat:        p.seat + 1,
+		ExtensionMs: t.cfg.ThinkingExtension.Milliseconds(),
+		Deadline:    deadline,
+	})
+	t.broadcastSnapshot()
+	return nil
+}
+
+func (t *Table) maybeSendActionWarning(now time.Time) {
+	if !t.isHandActive() || t.turnSeat < 0 || t.actionUntil.IsZero() || t.actionWarningSent || t.cfg.ActionWarning <= 0 {
+		return
+	}
+	remaining := t.actionUntil.Sub(now)
+	if remaining <= 0 || remaining > t.cfg.ActionWarning {
+		return
+	}
+	s := t.seats[t.turnSeat]
+	if s == nil || s.participant == nil || !s.participant.connected || s.participant.sink == nil {
+		return
+	}
+	t.actionWarningSent = true
+	s.participant.sink.Send(protocol.TypeActionWarning, t.stateVersion, protocol.ActionWarningPayload{
+		HandID:              t.handID,
+		TurnID:              t.turnID,
+		RemainingMs:         remaining.Milliseconds(),
+		ThinkingAvailable:   !t.thinkingUsed && t.cfg.ThinkingExtension > 0,
+		ThinkingExtensionMs: t.cfg.ThinkingExtension.Milliseconds(),
 	})
 }
 
@@ -900,6 +982,9 @@ func (t *Table) finishHand(events []texas.Event, now time.Time) {
 	t.actionUntil = time.Time{}
 	t.turnID = ""
 	t.turnSeat = -1
+	t.thinkingUsed = false
+	t.thinkingActive = false
+	t.actionWarningSent = false
 
 	winners := make(map[uint32]uint64)
 	for _, ev := range events {

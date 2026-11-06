@@ -23,14 +23,16 @@ type Config struct {
 }
 
 type TableConfig struct {
-	SmallBlind        uint64 `yaml:"smallBlind"`
-	BigBlind          uint64 `yaml:"bigBlind"`
-	StartingStack     uint64 `yaml:"startingStack"`
-	ActionTimeoutMs   int64  `yaml:"actionTimeoutMs"`
-	DisconnectGraceMs int64  `yaml:"disconnectGraceMs"`
-	StartCountdownMs  int64  `yaml:"startCountdownMs"`
-	ResultDisplayMs   int64  `yaml:"resultDisplayMs"`
-	ReadyTimeoutMs    int64  `yaml:"readyTimeoutMs"`
+	SmallBlind          uint64 `yaml:"smallBlind"`
+	BigBlind            uint64 `yaml:"bigBlind"`
+	StartingStack       uint64 `yaml:"startingStack"`
+	ActionTimeoutMs     int64  `yaml:"actionTimeoutMs"`
+	ThinkingExtensionMs int64  `yaml:"thinkingExtensionMs"`
+	ActionWarningMs     int64  `yaml:"actionWarningMs"`
+	DisconnectGraceMs   int64  `yaml:"disconnectGraceMs"`
+	StartCountdownMs    int64  `yaml:"startCountdownMs"`
+	ResultDisplayMs     int64  `yaml:"resultDisplayMs"`
+	ReadyTimeoutMs      int64  `yaml:"readyTimeoutMs"`
 }
 
 func Default() Config {
@@ -38,14 +40,16 @@ func Default() Config {
 		Addr:     ":8080",
 		ServerID: "poker-local-1",
 		Table: TableConfig{
-			SmallBlind:        10,
-			BigBlind:          20,
-			StartingStack:     2000,
-			ActionTimeoutMs:   90000,
-			DisconnectGraceMs: 90000,
-			StartCountdownMs:  3000,
-			ResultDisplayMs:   5000,
-			ReadyTimeoutMs:    60000,
+			SmallBlind:          10,
+			BigBlind:            20,
+			StartingStack:       2000,
+			ActionTimeoutMs:     90000,
+			ThinkingExtensionMs: 180000,
+			ActionWarningMs:     30000,
+			DisconnectGraceMs:   90000,
+			StartCountdownMs:    3000,
+			ResultDisplayMs:     5000,
+			ReadyTimeoutMs:      60000,
 		},
 	}
 }
@@ -94,6 +98,12 @@ func (c Config) Validate() error {
 	if c.Table.ActionTimeoutMs <= 0 {
 		return fmt.Errorf("table.actionTimeoutMs must be greater than zero")
 	}
+	if c.Table.ThinkingExtensionMs <= 0 {
+		return fmt.Errorf("table.thinkingExtensionMs must be greater than zero")
+	}
+	if c.Table.ActionWarningMs <= 0 || c.Table.ActionWarningMs >= c.Table.ActionTimeoutMs {
+		return fmt.Errorf("table.actionWarningMs must be greater than zero and less than actionTimeoutMs")
+	}
 	if c.Table.DisconnectGraceMs <= 0 {
 		return fmt.Errorf("table.disconnectGraceMs must be greater than zero")
 	}
@@ -115,6 +125,8 @@ func (c Config) NewTableConfig() tableapp.Config {
 	cfg.BigBlind = c.Table.BigBlind
 	cfg.StartingStack = c.Table.StartingStack
 	cfg.ActionTimeout = time.Duration(c.Table.ActionTimeoutMs) * time.Millisecond
+	cfg.ThinkingExtension = time.Duration(c.Table.ThinkingExtensionMs) * time.Millisecond
+	cfg.ActionWarning = time.Duration(c.Table.ActionWarningMs) * time.Millisecond
 	cfg.DisconnectGrace = time.Duration(c.Table.DisconnectGraceMs) * time.Millisecond
 	cfg.StartCountdown = time.Duration(c.Table.StartCountdownMs) * time.Millisecond
 	cfg.ResultDisplay = time.Duration(c.Table.ResultDisplayMs) * time.Millisecond

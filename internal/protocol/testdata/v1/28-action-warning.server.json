@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "type": "action.warning",
+  "deliverySeq": 28,
+  "stateVersion": 42,
+  "ts": "2026-11-06T00:42:30.000Z",
+  "payload": {
+    "handId": "hand-20261106-0001",
+    "turnId": "turn-hand-20261106-0001-002",
+    "remainingMs": 30000,
+    "thinkingAvailable": true,
+    "thinkingExtensionMs": 180000
+  }
+}

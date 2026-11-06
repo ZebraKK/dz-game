@@ -272,6 +272,8 @@ func (s *Server) handleClientMessage(ctx context.Context, sess *session, env pro
 			return actorProtocolError(protocol.ErrMalformedMessage, "动作格式错误")
 		}
 		return s.table.Action(ctx, sess.playerID, payload)
+	case protocol.TypeThink:
+		return s.table.Think(ctx, sess.playerID)
 	case protocol.TypePong:
 		return nil
 	default:

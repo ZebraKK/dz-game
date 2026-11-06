@@ -10,50 +10,56 @@ import (
 const MaxSeats = 9
 
 type Config struct {
-	TableID         string
-	MinPlayers      int
-	SmallBlind      uint64
-	BigBlind        uint64
-	Ante            uint64
-	StartingStack   uint64
-	RakePercent     int
-	ActionTimeout   time.Duration
-	DisconnectGrace time.Duration
-	StartCountdown  time.Duration
-	ResultDisplay   time.Duration
-	ReadyTimeout    time.Duration
+	TableID           string
+	MinPlayers        int
+	SmallBlind        uint64
+	BigBlind          uint64
+	Ante              uint64
+	StartingStack     uint64
+	RakePercent       int
+	ActionTimeout     time.Duration
+	ThinkingExtension time.Duration
+	ActionWarning     time.Duration
+	DisconnectGrace   time.Duration
+	StartCountdown    time.Duration
+	ResultDisplay     time.Duration
+	ReadyTimeout      time.Duration
 }
 
 func DefaultConfig() Config {
 	return Config{
-		TableID:         "main",
-		MinPlayers:      2,
-		SmallBlind:      10,
-		BigBlind:        20,
-		Ante:            0,
-		StartingStack:   2000,
-		RakePercent:     0,
-		ActionTimeout:   90 * time.Second,
-		DisconnectGrace: 90 * time.Second,
-		StartCountdown:  3 * time.Second,
-		ResultDisplay:   5 * time.Second,
-		ReadyTimeout:    60 * time.Second,
+		TableID:           "main",
+		MinPlayers:        2,
+		SmallBlind:        10,
+		BigBlind:          20,
+		Ante:              0,
+		StartingStack:     2000,
+		RakePercent:       0,
+		ActionTimeout:     90 * time.Second,
+		ThinkingExtension: 180 * time.Second,
+		ActionWarning:     30 * time.Second,
+		DisconnectGrace:   90 * time.Second,
+		StartCountdown:    3 * time.Second,
+		ResultDisplay:     5 * time.Second,
+		ReadyTimeout:      60 * time.Second,
 	}
 }
 
 func (c Config) runtimeConfig() protocol.RuntimeConfig {
 	return protocol.RuntimeConfig{
-		MaxSeats:          MaxSeats,
-		SmallBlind:        c.SmallBlind,
-		BigBlind:          c.BigBlind,
-		Ante:              c.Ante,
-		StartingStack:     c.StartingStack,
-		RakePercent:       c.RakePercent,
-		ActionTimeoutMs:   c.ActionTimeout.Milliseconds(),
-		DisconnectGraceMs: c.DisconnectGrace.Milliseconds(),
-		StartCountdownMs:  c.StartCountdown.Milliseconds(),
-		ResultDisplayMs:   c.ResultDisplay.Milliseconds(),
-		ReadyTimeoutMs:    c.ReadyTimeout.Milliseconds(),
+		MaxSeats:            MaxSeats,
+		SmallBlind:          c.SmallBlind,
+		BigBlind:            c.BigBlind,
+		Ante:                c.Ante,
+		StartingStack:       c.StartingStack,
+		RakePercent:         c.RakePercent,
+		ActionTimeoutMs:     c.ActionTimeout.Milliseconds(),
+		ThinkingExtensionMs: c.ThinkingExtension.Milliseconds(),
+		ActionWarningMs:     c.ActionWarning.Milliseconds(),
+		DisconnectGraceMs:   c.DisconnectGrace.Milliseconds(),
+		StartCountdownMs:    c.StartCountdown.Milliseconds(),
+		ResultDisplayMs:     c.ResultDisplay.Milliseconds(),
+		ReadyTimeoutMs:      c.ReadyTimeout.Milliseconds(),
 	}
 }
 

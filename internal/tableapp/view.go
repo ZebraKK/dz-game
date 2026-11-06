@@ -53,6 +53,7 @@ func (t *Table) buildSnapshot(p *participant) protocol.SnapshotPayload {
 			Seat:     t.turnSeat + 1,
 			PlayerID: turnPlayerID,
 			Deadline: t.actionUntil.UTC().Format(time.RFC3339Nano),
+			Thinking: t.thinkingActive,
 		}
 	}
 

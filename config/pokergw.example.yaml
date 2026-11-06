@@ -14,6 +14,8 @@ table:
   bigBlind: 20
   startingStack: 2000
   actionTimeoutMs: 180000
+  thinkingExtensionMs: 180000
+  actionWarningMs: 30000
   disconnectGraceMs: 300000
   startCountdownMs: 10000
   resultDisplayMs: 30000

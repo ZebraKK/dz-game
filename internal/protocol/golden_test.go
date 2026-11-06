@@ -41,8 +41,8 @@ func TestGoldenFixturesAndHashes(t *testing.T) {
 			t.Fatalf("decode %s: %v", entry.Name(), err)
 		}
 	}
-	if seen != 25 {
-		t.Fatalf("expected 25 JSON fixtures, found %d", seen)
+	if seen != 28 {
+		t.Fatalf("expected 28 JSON fixtures, found %d", seen)
 	}
 }
 

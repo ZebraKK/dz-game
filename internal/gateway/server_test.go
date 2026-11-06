@@ -249,3 +249,101 @@ func sendAllIn(t *testing.T, client *wsTestClient, req protocol.ActionRequestPay
 		t.Fatal(err)
 	}
 }
+
+func TestGatewayThinkExtendsTurn(t *testing.T) {
+	aliceID, aliceKey := newTestIdentity(t, "alice", "Alice")
+	bobID, bobKey := newTestIdentity(t, "bob", "Bob")
+
+	cfg := tableapp.DefaultConfig()
+	cfg.StartCountdown = 10 * time.Millisecond
+	cfg.ActionTimeout = 500 * time.Millisecond
+	cfg.ThinkingExtension = 250 * time.Millisecond
+	cfg.ActionWarning = 100 * time.Millisecond
+	cfg.ResultDisplay = 20 * time.Millisecond
+	table := tableapp.NewTable(cfg)
+	defer table.Close()
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	gw := NewServer(table, []Identity{aliceID, bobID}, "test-server", logger)
+	httpServer := httptest.NewServer(gw)
+	defer httpServer.Close()
+	wsURL := "ws" + strings.TrimPrefix(httpServer.URL, "http") + "/ws"
+
+	alice := dialAndJoin(t, wsURL, aliceID, aliceKey)
+	defer alice.conn.Close(websocket.StatusNormalClosure, "done")
+	bob := dialAndJoin(t, wsURL, bobID, bobKey)
+	defer bob.conn.Close(websocket.StatusNormalClosure, "done")
+	if err := sendClientMessage(alice.conn, protocol.TypeSit, protocol.SitPayload{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := sendClientMessage(bob.conn, protocol.TypeSit, protocol.SitPayload{}); err != nil {
+		t.Fatal(err)
+	}
+	alice.startReader()
+	bob.startReader()
+
+	var actor *wsTestClient
+	var request protocol.ActionRequestPayload
+	deadline := time.After(2 * time.Second)
+	for actor == nil {
+		select {
+		case env := <-alice.messages:
+			if env.Type == protocol.TypeActionRequest {
+				if err := env.DecodePayload(&request); err != nil {
+					t.Fatal(err)
+				}
+				actor = alice
+			}
+			if env.Type == protocol.TypeError {
+				t.Fatalf("alice error before action")
+			}
+		case env := <-bob.messages:
+			if env.Type == protocol.TypeActionRequest {
+				if err := env.DecodePayload(&request); err != nil {
+					t.Fatal(err)
+				}
+				actor = bob
+			}
+			if env.Type == protocol.TypeError {
+				t.Fatalf("bob error before action")
+			}
+		case err := <-alice.readErr:
+			t.Fatal(err)
+		case err := <-bob.readErr:
+			t.Fatal(err)
+		case <-deadline:
+			t.Fatal("timed out waiting for action request")
+		}
+	}
+	if !request.ThinkingAvailable || request.ThinkingExtensionMs != cfg.ThinkingExtension.Milliseconds() {
+		t.Fatalf("unexpected thinking fields: %+v", request)
+	}
+	if err := sendClientMessage(actor.conn, protocol.TypeThink, protocol.EmptyPayload{}); err != nil {
+		t.Fatalf("send think: %v", err)
+	}
+
+	deadline = time.After(2 * time.Second)
+	for {
+		select {
+		case env := <-actor.messages:
+			switch env.Type {
+			case protocol.TypeTurnThinking:
+				var payload protocol.TurnThinkingPayload
+				if err := env.DecodePayload(&payload); err != nil {
+					t.Fatal(err)
+				}
+				if payload.ExtensionMs != cfg.ThinkingExtension.Milliseconds() {
+					t.Fatalf("unexpected extension: %+v", payload)
+				}
+				return
+			case protocol.TypeError:
+				var payload protocol.ErrorPayload
+				_ = env.DecodePayload(&payload)
+				t.Fatalf("think rejected: %s %s", payload.Code, payload.Message)
+			}
+		case err := <-actor.readErr:
+			t.Fatal(err)
+		case <-deadline:
+			t.Fatal("timed out waiting for turn.thinking")
+		}
+	}
+}
